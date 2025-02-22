@@ -11,12 +11,15 @@ import {
   ScrollView,
   PermissionsAndroid,
   Platform,
+  TouchableOpacity,
 } from "react-native";
 import * as ImagePicker from "react-native-image-picker";
 import Geolocation from "react-native-geolocation-service";
 import { Picker } from "@react-native-picker/picker";
+import { useNavigation } from "@react-navigation/native";
 
 const UserLoc = () => {
+  const navigation = useNavigation();
   const [name, setName] = useState("");
   const [client, setClient] = useState("");
   const [site, setSite] = useState("");
@@ -129,6 +132,16 @@ const UserLoc = () => {
     );
   };
 
+  const handleSubmit = () => {
+    if (!name || !client || !site || !activity || !assigned || !remarks || !photo || !location) {
+      Alert.alert("Error", "Please fill all fields and upload an image.");
+      return;
+    }
+    const userData = { name, client, site, activity, assigned, remarks, photo, location, dateTime };
+    console.log("Submitted Data:", userData);
+    navigation.navigate("Dashboard", { userData });
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
@@ -166,6 +179,9 @@ const UserLoc = () => {
           )}
           {dateTime && <Text style={styles.info}>Date/Time: {dateTime}</Text>}
         </View>
+        <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
+          <Text style={styles.submitText}>Submit</Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -180,6 +196,8 @@ const styles = StyleSheet.create({
   image: { width: 200, height: 200, borderRadius: 10, marginVertical: 10 },
   details: { fontSize: 16, fontWeight: "bold", marginTop: 10 },
   info: { fontSize: 16, marginTop: 10 },
+  submitButton: { backgroundColor: "blue", padding: 15, borderRadius: 10, alignItems: "center", marginTop: 20 },
+  submitText: { color: "white", fontSize: 18, fontWeight: "bold" },
 });
 
 export default UserLoc;
