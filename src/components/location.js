@@ -140,7 +140,7 @@ const UserLoc = () => {
       return;
     }
     const userData = { name, client, site, activity, assigned, remarks, photo, location, dateTime };
-    setSiteData(userData)
+    // setSiteData(userData)
     console.log("Submitted Data:", name, client, site);
     console.log("Submitted Data:");
     Alert.alert(
@@ -148,7 +148,7 @@ const UserLoc = () => {
       `Name: ${userData.name}\nClient: ${userData.client}\nSite: ${userData.site}\nActivity: ${userData.activity}\nAssigned By: ${userData.assigned}\nRemarks: ${userData.remarks}\nDate/Time: ${userData.dateTime}\nLocation: ${userData.location.latitude}, ${userData.location.longitude}`,
       [{ text: "OK", onPress: () => navigation.navigate("Dashboard", { userData }) }]
     );
-    //navigation.navigate("Dashboard");
+    navigation.navigate("Dashboard", {userData});
   };
 
   return (
