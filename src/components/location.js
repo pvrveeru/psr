@@ -18,6 +18,7 @@ import Geolocation from 'react-native-geolocation-service';
 import { Picker } from '@react-native-picker/picker';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Icon from 'react-native-vector-icons/Ionicons';
 
 const UserLoc = () => {
   const navigation = useNavigation();
@@ -160,6 +161,12 @@ const UserLoc = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+       <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Icon name="arrow-back" size={24} color="white" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Enter Site Details</Text>
+      </View>
       <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
         <View>
           <Text style={styles.label}>Name:</Text>
@@ -205,6 +212,21 @@ const UserLoc = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#007bff",
+    paddingVertical: 15,
+    paddingHorizontal: 10,
+  },
+  backButton: {
+    marginRight: 10,
+  },
+  headerTitle: {
+    color: "white",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
   scrollContainer: { padding: 20 },
   input: { borderWidth: 1, borderColor: 'black', borderRadius: 8, padding: 10, marginVertical: 10 },
   label: { fontSize: 12, fontWeight: 'bold', marginTop: 0 },

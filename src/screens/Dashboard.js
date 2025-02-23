@@ -1,12 +1,11 @@
 import { useNavigation, useRoute } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, Modal, TouchableOpacity, StyleSheet, Alert, ScrollView, Image } from 'react-native';
+import { View, Text, TextInput, Modal, TouchableOpacity, StyleSheet, Alert, ScrollView, Image, Keyboard } from 'react-native';
 import RNHTMLtoPDF from 'react-native-html-to-pdf';
 import Share from 'react-native-share';
 import Icon from 'react-native-vector-icons/Ionicons';
 // import Modal from 'react-native-modal';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import sitesJson from '../assets/sites.json';
 
 const Dashboard = () => {
   const route = useRoute();
@@ -14,6 +13,25 @@ const Dashboard = () => {
   const [siteData, setSiteData] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedSite, setSelectedSite] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      'keyboardDidShow',
+      () => setKeyboardVisible(true)
+    );
+    const keyboardDidHideListener = Keyboard.addListener(
+      'keyboardDidHide',
+      () => setKeyboardVisible(false)
+    );
+
+    return () => {
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
+    };
+  }, []);
+
   useEffect(() => {
     const loadSites = async () => {
       try {
@@ -44,15 +62,9 @@ const Dashboard = () => {
     }
   }, [route.params?.userData]);
 
-  // // Save sites to AsyncStorage
-  // const saveSites = async (newData) => {
-  //   try {
-  //     await AsyncStorage.setItem('sites', JSON.stringify(newData));
-  //     console.log('Sites saved successfully in AsyncStorage!');
-  //   } catch (error) {
-  //     console.error('Error saving sites:', error);
-  //   }
-  // };
+  const filteredSites = siteData?.filter(site => {
+    return site.dateTime.toLowerCase().includes(searchQuery.toLowerCase());
+  });
 
   const openModal = (site) => {
     setSelectedSite(site);
@@ -218,35 +230,46 @@ const Dashboard = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <TextInput style={styles.input} placeholder="Search by date..." />
-      <TouchableOpacity onPress={shareAllSitesAsPDF} style={{alignSelf: 'flex-end', margin: 10}}>
-        <Icon name="share-social-outline" size={28} />
-      </TouchableOpacity>
+    <>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>All Sites</Text>
+      </View>
+      <View style={styles.container}>
+        <View style={styles.searchHeader}>
+          <TextInput
+            style={styles.input}
+            placeholder="Search by date..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
 
-      <ScrollView style={styles.scrollView}>
-        {siteData?.length === 0 ? (
-          <Text style={styles.noDataText}>No sites available</Text>
-        ) : (
-          siteData?.map((site, index) => (
-            <View key={index} style={styles.siteItem}>
-              <TouchableOpacity onPress={() => openModal(site)}>
-                <Text style={styles.siteName}>{site.name}</Text>
-              </TouchableOpacity>
-              <Text style={styles.siteDate}>{site.dateTime}</Text>
-              <TouchableOpacity style={styles.shareButton} onPress={() => shareSiteAsPDF(site)}>
-                <Text style={styles.shareText}>Share</Text>
-              </TouchableOpacity>
-            </View>
-          ))
+          <TouchableOpacity onPress={shareAllSitesAsPDF} style={{ alignSelf: 'flex-end', margin: 10 }}>
+            <Icon name="share-social-outline" size={28} />
+          </TouchableOpacity>
+        </View>
+        <ScrollView style={styles.scrollView}>
+          {filteredSites?.length === 0 ? (
+            <Text style={styles.noDataText}>No sites available</Text>
+          ) : (
+            filteredSites?.map((site, index) => (
+              <View key={index} style={styles.siteItem}>
+                <TouchableOpacity onPress={() => openModal(site)}>
+                  <Text style={styles.siteName}>{site.name}</Text>
+                </TouchableOpacity>
+                <Text style={styles.siteDate}>{site.dateTime}</Text>
+                <TouchableOpacity style={styles.shareButton} onPress={() => shareSiteAsPDF(site)}>
+                  <Text style={styles.shareText}>Share</Text>
+                </TouchableOpacity>
+              </View>
+            ))
+          )}
+        </ScrollView>
+        {!isKeyboardVisible && (
+          <TouchableOpacity style={styles.shareAllButton} onPress={addSite}>
+            <Text style={styles.shareText}>Add Site</Text>
+          </TouchableOpacity>
         )}
-      </ScrollView>
-
-      <TouchableOpacity style={styles.shareAllButton} onPress={addSite}>
-        <Text style={styles.shareText}>Add Site</Text>
-      </TouchableOpacity>
-
-      {/* Modal for Site Details */}
+      </View>
       <Modal visible={modalVisible} transparent={true} animationType="slide">
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
@@ -279,8 +302,7 @@ const Dashboard = () => {
                     <Text style={styles.boldText}>Photo:</Text>
                     <Image
                       source={{ uri: selectedSite.photo.uri }}
-                      style={{ width: 200, height: 200, resizeMode: 'contain' }}
-                    />
+                      style={{ width: 200, height: 200, resizeMode: 'contain' }} />
                   </>
                 )}
 
@@ -297,7 +319,7 @@ const Dashboard = () => {
           </View>
         </View>
       </Modal>
-    </View>
+    </>
   );
 };
 
@@ -309,7 +331,7 @@ const styles = StyleSheet.create({
   siteDate: { fontSize: 16, color: 'gray' },
   shareButton: { backgroundColor: '#ff9800', padding: 8, borderRadius: 5 },
   shareText: { color: '#fff', fontSize: 16, textAlign: 'center' },
-  shareAllButton: { backgroundColor: '#2196F3', padding: 15, borderRadius: 5, marginTop: 20 },
+  shareAllButton: { backgroundColor: '#2196F3', padding: 15, borderRadius: 5 },
   buttonText: { color: '#fff', fontSize: 16, textAlign: 'center' },
   modalContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' },
   modalContent: { backgroundColor: '#fff', padding: 20, borderRadius: 10, width: '80%' },
@@ -318,6 +340,18 @@ const styles = StyleSheet.create({
   closeText: { color: '#fff', textAlign: 'center' },
   boldText: {
     fontWeight: 'bold',
+  },
+  noDataText: { textAlign: 'center' },
+  header: {
+    backgroundColor: "#007bff",
+    paddingVertical: 15,
+    paddingHorizontal: 10,
+  },
+  headerTitle: {
+    color: "white",
+    fontSize: 18,
+    fontWeight: "bold",
+    textAlign: 'center'
   },
 });
 
