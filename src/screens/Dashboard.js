@@ -223,14 +223,16 @@ const saveSites = async (newData) => {
   console.log('selectedSite', selectedSite);
   return (
     <View style={styles.container}>
+      <View style={styles.searchHeader}> 
       <TextInput style={styles.input} placeholder="Search by date..." />
       <TouchableOpacity onPress={shareAllSitesAsPDF}>
         <Icon name="share-social-outline" size={28} />
       </TouchableOpacity>
+      </View>
 
       <ScrollView style={styles.scrollView}>
         {siteData.length === 0 ? (
-          <Text style={styles.noDataText}>No sites available</Text>
+          <Text style={styles.noDataText}>No Data available</Text>
         ) : (
           siteData.map((site, index) => (
             <View key={index} style={styles.siteItem}>
@@ -307,6 +309,7 @@ const saveSites = async (newData) => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20 },
+  searchHeader: { flex: 1},
   input: { borderWidth: 1, padding: 10, marginBottom: 20 },
   siteItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 10, borderBottomWidth: 1 },
   siteName: { fontSize: 18, fontWeight: 'bold' },
@@ -323,6 +326,7 @@ const styles = StyleSheet.create({
   boldText: {
     fontWeight: 'bold',
   },
+  noDataText: {textAlign: 'center'}
 });
 
 export default Dashboard;
