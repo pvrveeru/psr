@@ -221,6 +221,7 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     paddingHorizontal: 10,
     columnGap: 10,
+    backgroundColor: '#ccc'
   },
   backButton: {
     marginRight: 10,
