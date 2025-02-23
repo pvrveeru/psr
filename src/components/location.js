@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
 import {
   Text,
   View,
@@ -12,38 +12,39 @@ import {
   PermissionsAndroid,
   Platform,
   TouchableOpacity,
-} from "react-native";
-import * as ImagePicker from "react-native-image-picker";
-import Geolocation from "react-native-geolocation-service";
-import { Picker } from "@react-native-picker/picker";
-import { useNavigation, useRoute } from "@react-navigation/native";
+} from 'react-native';
+import * as ImagePicker from 'react-native-image-picker';
+import Geolocation from 'react-native-geolocation-service';
+import { Picker } from '@react-native-picker/picker';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const UserLoc = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { setSiteData } = route.params || {};
-  const [name, setName] = useState("");
-  const [client, setClient] = useState("");
-  const [site, setSite] = useState("");
-  const [activity, setActivity] = useState("");
-  const [assigned, setAssigned] = useState(""); // Dropdown state
-  const [remarks, setRemarks] = useState("");
+  const [name, setName] = useState('');
+  const [client, setClient] = useState('');
+  const [site, setSite] = useState('');
+  const [activity, setActivity] = useState('');
+  const [assigned, setAssigned] = useState(''); // Dropdown state
+  const [remarks, setRemarks] = useState('');
   const [photo, setPhoto] = useState(null);
   const [location, setLocation] = useState(null);
-  const [dateTime, setDateTime] = useState("");
-  const assignedByOptions = ["User1", "User2", "User3"];
+  const [dateTime, setDateTime] = useState('');
+  const assignedByOptions = ['User1', 'User2', 'User3'];
 
   // Request camera permission (Android)
   const requestCameraPermission = async () => {
-    if (Platform.OS === "android") {
+    if (Platform.OS === 'android') {
       const granted = await PermissionsAndroid.request(
         PermissionsAndroid.PERMISSIONS.CAMERA,
         {
-          title: "Camera Permission",
-          message: "This app needs access to your camera.",
-          buttonNeutral: "Ask Me Later",
-          buttonNegative: "Cancel",
-          buttonPositive: "OK",
+          title: 'Camera Permission',
+          message: 'This app needs access to your camera.',
+          buttonNeutral: 'Ask Me Later',
+          buttonNegative: 'Cancel',
+          buttonPositive: 'OK',
         }
       );
       return granted === PermissionsAndroid.RESULTS.GRANTED;
@@ -53,15 +54,15 @@ const UserLoc = () => {
 
   // Request location permission (Android)
   const requestLocationPermission = async () => {
-    if (Platform.OS === "android") {
+    if (Platform.OS === 'android') {
       const granted = await PermissionsAndroid.request(
         PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
         {
-          title: "Location Permission",
-          message: "This app needs access to your location.",
-          buttonNeutral: "Ask Me Later",
-          buttonNegative: "Cancel",
-          buttonPositive: "OK",
+          title: 'Location Permission',
+          message: 'This app needs access to your location.',
+          buttonNeutral: 'Ask Me Later',
+          buttonNegative: 'Cancel',
+          buttonPositive: 'OK',
         }
       );
       return granted === PermissionsAndroid.RESULTS.GRANTED;
@@ -73,31 +74,31 @@ const UserLoc = () => {
   const captureImage = async () => {
     const cameraPermission = await requestCameraPermission();
     if (!cameraPermission) {
-      Alert.alert("Permission Denied", "Camera access is required.");
+      Alert.alert('Permission Denied', 'Camera access is required.');
       return;
     }
 
     try {
       const result = await ImagePicker.launchCamera({
-        mediaType: "photo",
-        cameraType: "front",
+        mediaType: 'photo',
+        cameraType: 'front',
         saveToPhotos: true,
       });
 
       if (result.didCancel) {
-        Alert.alert("Cancelled", "You cancelled the camera operation.");
+        Alert.alert('Cancelled', 'You cancelled the camera operation.');
       } else if (result.errorCode) {
-        console.error("Camera Error:", result.errorMessage);
-        Alert.alert("Camera Error", `Code: ${result.errorCode}, Message: ${result.errorMessage}`);
+        console.error('Camera Error:', result.errorMessage);
+        Alert.alert('Camera Error', `Code: ${result.errorCode}, Message: ${result.errorMessage}`);
       } else if (result.assets && result.assets.length > 0) {
         setPhoto(result.assets[0]);
         fetchLocation();
       } else {
-        Alert.alert("Error", "No photo was captured.");
+        Alert.alert('Error', 'No photo was captured.');
       }
     } catch (error) {
-      console.error("Unexpected Camera Error:", error);
-      Alert.alert("Unexpected Error", "Something went wrong while opening the camera.");
+      console.error('Unexpected Camera Error:', error);
+      Alert.alert('Unexpected Error', 'Something went wrong while opening the camera.');
     }
   };
 
@@ -105,7 +106,7 @@ const UserLoc = () => {
   const fetchLocation = async () => {
     const granted = await requestLocationPermission();
     if (!granted) {
-      Alert.alert("Permission Denied", "Location access denied.");
+      Alert.alert('Permission Denied', 'Location access denied.');
       return;
     }
 
@@ -118,38 +119,44 @@ const UserLoc = () => {
         const formattedDateTime = `${now.getDate()}/${now.getMonth() + 1}/${now.getFullYear()} ${now
           .getHours()
           .toString()
-          .padStart(2, "0")}:${now
+          .padStart(2, '0')}:${now
             .getMinutes()
             .toString()
-            .padStart(2, "0")}:${now
+            .padStart(2, '0')}:${now
               .getSeconds()
               .toString()
-              .padStart(2, "0")}`;
+              .padStart(2, '0')}`;
         setDateTime(formattedDateTime);
       },
       (error) => {
-        Alert.alert("Location Error", JSON.stringify(error));
+        Alert.alert('Location Error', JSON.stringify(error));
       },
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
     );
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!name || !client || !site || !activity || !assigned || !remarks || !photo || !location) {
-      Alert.alert("Error", "Please fill all fields and upload an image.");
+      Alert.alert('Error', 'Please fill all fields and upload an image.');
       return;
     }
-    const userData = { name, client, site, activity, assigned, remarks, photo, location, dateTime };
-    // setSiteData(userData)
-    console.log("Submitted Data:", name, client, site);
-    console.log("Submitted Data:");
-    Alert.alert(
-      "Submitted Data",
-      `Name: ${userData.name}\nClient: ${userData.client}\nSite: ${userData.site}\nActivity: ${userData.activity}\nAssigned By: ${userData.assigned}\nRemarks: ${userData.remarks}\nDate/Time: ${userData.dateTime}\nLocation: ${userData.location.latitude}, ${userData.location.longitude}`,
-      [{ text: "OK", onPress: () => navigation.navigate("Dashboard", { userData }) }]
-    );
-    navigation.navigate("Dashboard", {userData});
+
+    try {
+      const newSite = { name, client, site, activity, assigned, remarks, photo, location, dateTime };
+      const storedSites = await AsyncStorage.getItem('sites');
+      let siteList = storedSites ? JSON.parse(storedSites) : [];
+      if (!Array.isArray(siteList)) {
+        siteList = [];
+      }
+      siteList.push(newSite);
+      await AsyncStorage.setItem('sites', JSON.stringify(siteList));
+      navigation.navigate('Dashboard', { userData: newSite });
+    } catch (error) {
+      console.error('Error saving site:', error);
+      Alert.alert('Error', 'Failed to save site.');
+    }
   };
+
 
   return (
     <SafeAreaView style={styles.container}>
@@ -199,14 +206,14 @@ const UserLoc = () => {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContainer: { padding: 20 },
-  input: { borderWidth: 1, borderColor: "black", borderRadius: 8, padding: 10, marginVertical: 10 },
-  label: { fontSize: 12, fontWeight: "bold", marginTop: 0 },
-  commentBox: { borderWidth: 1, borderColor: "black", borderRadius: 8, padding: 10, marginVertical: 10, textAlignVertical: "top" },
+  input: { borderWidth: 1, borderColor: 'black', borderRadius: 8, padding: 10, marginVertical: 10 },
+  label: { fontSize: 12, fontWeight: 'bold', marginTop: 0 },
+  commentBox: { borderWidth: 1, borderColor: 'black', borderRadius: 8, padding: 10, marginVertical: 10, textAlignVertical: 'top' },
   image: { width: 200, height: 200, borderRadius: 10, marginVertical: 10 },
-  details: { fontSize: 16, fontWeight: "bold", marginTop: 10 },
+  details: { fontSize: 16, fontWeight: 'bold', marginTop: 10 },
   info: { fontSize: 16, marginTop: 10 },
-  submitButton: { backgroundColor: "#28a745", padding: 15, borderRadius: 10, alignItems: "center", marginTop: 20 },
-  submitText: { color: "white", fontSize: 18, fontWeight: "bold" },
+  submitButton: { backgroundColor: '#28a745', padding: 15, borderRadius: 10, alignItems: 'center', marginTop: 20 },
+  submitText: { color: 'white', fontSize: 18, fontWeight: 'bold' },
 });
 
 export default UserLoc;

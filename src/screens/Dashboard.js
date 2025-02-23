@@ -14,47 +14,45 @@ const Dashboard = () => {
   const [siteData, setSiteData] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedSite, setSelectedSite] = useState(null);
-console.log('sitesJson', sitesJson);
-useEffect(() => {
-  const loadSites = async () => {
-    try {
-      const storedSites = await AsyncStorage.getItem('sites');
-      if (storedSites) {
-        setSiteData(JSON.parse(storedSites));
+  useEffect(() => {
+    const loadSites = async () => {
+      try {
+        const storedSites = await AsyncStorage.getItem('sites');
+        if (storedSites) {
+          setSiteData(JSON.parse(storedSites));
+        }
+      } catch (error) {
+        console.error('Error loading sites:', error);
       }
-    } catch (error) {
-      console.error('Error loading sites:', error);
+    };
+
+    loadSites();
+  }, [route.params?.userData]);
+
+  // Update siteData when new data is passed via route.params
+  useEffect(() => {
+    if (route.params?.userData) {
+      const newSite = route.params.userData;
+      setSiteData((prevData) => {
+        const isDuplicate = prevData.some(item => item.name === newSite.name);
+        if (!isDuplicate) {
+          const updatedData = [...prevData, newSite];
+          return updatedData;
+        }
+        return prevData;
+      });
     }
-  };
+  }, [route.params?.userData]);
 
-  loadSites();
-}, [route.params?.userData]);
-
-// Update siteData when new data is passed via route.params
-useEffect(() => {
-  if (route.params?.userData) {
-    const newSite = route.params.userData;
-    setSiteData((prevData) => {
-      const isDuplicate = prevData.some(item => item.name === newSite.name);
-      if (!isDuplicate) {
-        const updatedData = [...prevData, newSite];
-        saveSites(updatedData); // Save updated data to AsyncStorage
-        return updatedData;
-      }
-      return prevData;
-    });
-  }
-}, [route.params?.userData]);
-
-// Save sites to AsyncStorage
-const saveSites = async (newData) => {
-  try {
-    await AsyncStorage.setItem('sites', JSON.stringify(newData));
-    console.log('Sites saved successfully in AsyncStorage!');
-  } catch (error) {
-    console.error('Error saving sites:', error);
-  }
-};
+  // // Save sites to AsyncStorage
+  // const saveSites = async (newData) => {
+  //   try {
+  //     await AsyncStorage.setItem('sites', JSON.stringify(newData));
+  //     console.log('Sites saved successfully in AsyncStorage!');
+  //   } catch (error) {
+  //     console.error('Error saving sites:', error);
+  //   }
+  // };
 
   const openModal = (site) => {
     setSelectedSite(site);
@@ -219,20 +217,18 @@ const saveSites = async (newData) => {
     }
   };
 
-  console.log('siteDats', siteData);
-  console.log('selectedSite', selectedSite);
   return (
     <View style={styles.container}>
       <TextInput style={styles.input} placeholder="Search by date..." />
-      <TouchableOpacity onPress={shareAllSitesAsPDF}>
+      <TouchableOpacity onPress={shareAllSitesAsPDF} style={{alignSelf: 'flex-end', margin: 10}}>
         <Icon name="share-social-outline" size={28} />
       </TouchableOpacity>
 
       <ScrollView style={styles.scrollView}>
-        {siteData.length === 0 ? (
+        {siteData?.length === 0 ? (
           <Text style={styles.noDataText}>No sites available</Text>
         ) : (
-          siteData.map((site, index) => (
+          siteData?.map((site, index) => (
             <View key={index} style={styles.siteItem}>
               <TouchableOpacity onPress={() => openModal(site)}>
                 <Text style={styles.siteName}>{site.name}</Text>
@@ -254,49 +250,49 @@ const saveSites = async (newData) => {
       <Modal visible={modalVisible} transparent={true} animationType="slide">
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-          {selectedSite && (
-  <>
-    <Text style={styles.boldText}>Site:</Text>
-    <Text style={styles.modalTitle}>{selectedSite.site}</Text>
+            {selectedSite && (
+              <>
+                <Text style={styles.boldText}>Site:</Text>
+                <Text style={styles.modalTitle}>{selectedSite.site}</Text>
 
-    <Text style={styles.boldText}>Client:</Text>
-    <Text>{selectedSite.client}</Text>
+                <Text style={styles.boldText}>Client:</Text>
+                <Text>{selectedSite.client}</Text>
 
-    <Text style={styles.boldText}>Activity:</Text>
-    <Text>{selectedSite.activity}</Text>
+                <Text style={styles.boldText}>Activity:</Text>
+                <Text>{selectedSite.activity}</Text>
 
-    <Text style={styles.boldText}>Assigned:</Text>
-    <Text>{selectedSite.assigned}</Text>
+                <Text style={styles.boldText}>Assigned:</Text>
+                <Text>{selectedSite.assigned}</Text>
 
-    <Text style={styles.boldText}>Remarks:</Text>
-    <Text>{selectedSite.remarks}</Text>
+                <Text style={styles.boldText}>Remarks:</Text>
+                <Text>{selectedSite.remarks}</Text>
 
-    <Text style={styles.boldText}>Date & Time:</Text>
-    <Text>{selectedSite.dateTime}</Text>
+                <Text style={styles.boldText}>Date & Time:</Text>
+                <Text>{selectedSite.dateTime}</Text>
 
-    <Text style={styles.boldText}>Location:</Text>
-    <Text>Latitude: {selectedSite.location.latitude}</Text>
-    <Text>Longitude: {selectedSite.location.longitude}</Text>
+                <Text style={styles.boldText}>Location:</Text>
+                <Text>Latitude: {selectedSite.location.latitude}</Text>
+                <Text>Longitude: {selectedSite.location.longitude}</Text>
 
-    {selectedSite.photo && (
-      <>
-        <Text style={styles.boldText}>Photo:</Text>
-        <Image
-          source={{ uri: selectedSite.photo.uri }}
-          style={{ width: 200, height: 200, resizeMode: 'contain' }}
-        />
-      </>
-    )}
+                {selectedSite.photo && (
+                  <>
+                    <Text style={styles.boldText}>Photo:</Text>
+                    <Image
+                      source={{ uri: selectedSite.photo.uri }}
+                      style={{ width: 200, height: 200, resizeMode: 'contain' }}
+                    />
+                  </>
+                )}
 
-    <TouchableOpacity style={styles.shareButton} onPress={() => shareSiteAsPDF(selectedSite)}>
-      <Text style={styles.shareText}>Share</Text>
-    </TouchableOpacity>
+                <TouchableOpacity style={styles.shareButton} onPress={() => shareSiteAsPDF(selectedSite)}>
+                  <Text style={styles.shareText}>Share</Text>
+                </TouchableOpacity>
 
-    <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
-      <Text style={styles.closeText}>Close</Text>
-    </TouchableOpacity>
-  </>
-)}
+                <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
+                  <Text style={styles.closeText}>Close</Text>
+                </TouchableOpacity>
+              </>
+            )}
 
           </View>
         </View>
