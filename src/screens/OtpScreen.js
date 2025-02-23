@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, Alert } from 'react-native';
@@ -7,8 +8,9 @@ const OtpScreen = ({ route }) => {
   const { mobile } = route.params;
   const [otp, setOtp] = useState('');
 
-  const verifyOtp = () => {
+  const verifyOtp = async () => {
     if (otp === '1234') {
+      await AsyncStorage.setItem('isLoggedIn', 'true');
       navigation.navigate('Dashboard');
     } else {
       Alert.alert('Invalid OTP');

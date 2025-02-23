@@ -6,6 +6,7 @@ import Share from 'react-native-share';
 import Icon from 'react-native-vector-icons/Ionicons';
 // import Modal from 'react-native-modal';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import moment from 'moment';
 
 const Dashboard = () => {
   const route = useRoute();
@@ -47,7 +48,6 @@ const Dashboard = () => {
     loadSites();
   }, [route.params?.userData]);
 
-  // Update siteData when new data is passed via route.params
   useEffect(() => {
     if (route.params?.userData) {
       const newSite = route.params.userData;
@@ -228,12 +228,24 @@ const Dashboard = () => {
       Alert.alert('Error', 'Failed to generate PDF');
     }
   };
+  const formatDateTime = (dateTimeString) => {
+    if (!dateTimeString) {return 'No Date';}
+    const parsedDate = moment(dateTimeString, ['DD/MM/YYYY HH:mm:ss', 'YYYY-MM-DD HH:mm:ss', 'YYYY/MM/DD HH:mm:ss']);
+    if (!parsedDate.isValid()) {
+      return 'Invalid Date';
+    }
+    return parsedDate.format('D/M/YYYY hh:mm A');
+  };
 
   return (
     <>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>All Sites</Text>
+        <Text style={styles.headerTitle}>Work Report</Text>
+        <TouchableOpacity onPress={shareAllSitesAsPDF} style={{ marginLeft: 'auto' }}>
+          <Icon name="share-social-outline" size={28} />
+        </TouchableOpacity>
       </View>
+
       <View style={styles.container}>
         <View style={styles.searchHeader}>
           <TextInput
@@ -242,10 +254,6 @@ const Dashboard = () => {
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
-
-          <TouchableOpacity onPress={shareAllSitesAsPDF} style={{ alignSelf: 'flex-end', margin: 10 }}>
-            <Icon name="share-social-outline" size={28} />
-          </TouchableOpacity>
         </View>
         <ScrollView style={styles.scrollView}>
           {filteredSites?.length === 0 ? (
@@ -256,10 +264,7 @@ const Dashboard = () => {
                 <TouchableOpacity onPress={() => openModal(site)}>
                   <Text style={styles.siteName}>{site.name}</Text>
                 </TouchableOpacity>
-                <Text style={styles.siteDate}>{site.dateTime}</Text>
-                <TouchableOpacity style={styles.shareButton} onPress={() => shareSiteAsPDF(site)}>
-                  <Text style={styles.shareText}>Share</Text>
-                </TouchableOpacity>
+                <Text style={styles.siteDate}>{formatDateTime(site.dateTime)}</Text>
               </View>
             ))
           )}
@@ -273,57 +278,92 @@ const Dashboard = () => {
       <Modal visible={modalVisible} transparent={true} animationType="slide">
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.headerTitle}>Work Information</Text>
+              <TouchableOpacity onPress={() => shareSiteAsPDF(selectedSite)} style={styles.headerIcon}>
+                <Icon name="share-social-outline" size={28} color="black" />
+              </TouchableOpacity>
+            </View>
+
             {selectedSite && (
               <>
-                <Text style={styles.boldText}>Site:</Text>
-                <Text style={styles.modalTitle}>{selectedSite.site}</Text>
-
-                <Text style={styles.boldText}>Client:</Text>
-                <Text>{selectedSite.client}</Text>
-
-                <Text style={styles.boldText}>Activity:</Text>
-                <Text>{selectedSite.activity}</Text>
-
-                <Text style={styles.boldText}>Assigned:</Text>
-                <Text>{selectedSite.assigned}</Text>
-
-                <Text style={styles.boldText}>Remarks:</Text>
-                <Text>{selectedSite.remarks}</Text>
-
-                <Text style={styles.boldText}>Date & Time:</Text>
-                <Text>{selectedSite.dateTime}</Text>
-
-                <Text style={styles.boldText}>Location:</Text>
-                <Text>Latitude: {selectedSite.location.latitude}</Text>
-                <Text>Longitude: {selectedSite.location.longitude}</Text>
+                <View style={styles.line}>
+                  <Text style={styles.boldText}>Site:</Text>
+                  <Text style={styles.normalText}>{selectedSite.site}</Text>
+                </View>
+                <View style={styles.line}>
+                  <Text style={styles.boldText}>Activity:</Text>
+                  <Text style={styles.normalText}>{selectedSite.activity}</Text>
+                </View>
+                <View style={styles.line}>
+                  <Text style={styles.boldText}>Client:</Text>
+                  <Text>{selectedSite.client}</Text>
+                </View>
+                <View style={styles.line}>
+                  <Text style={styles.boldText}>Assigned:</Text>
+                  <Text>{selectedSite.assigned}</Text>
+                </View>
+                <View style={styles.line}>
+                  <Text style={styles.boldText}>Remarks:</Text>
+                  <Text>{selectedSite.remarks}</Text>
+                </View>
+                <View style={styles.line}>
+                  <Text style={styles.boldText}>Date & Time:</Text>
+                  <Text>{formatDateTime(selectedSite.dateTime)}</Text>
+                </View>
+                <View style={styles.line}>
+                  <Text style={styles.boldText}>Latitude:</Text>
+                  <Text>{selectedSite.location.latitude}</Text>
+                </View>
+                <View style={styles.line}>
+                  <Text style={styles.boldText}>Longitude:</Text>
+                  <Text>{selectedSite.location.longitude}</Text>
+                </View>
 
                 {selectedSite.photo && (
                   <>
-                    <Text style={styles.boldText}>Photo:</Text>
+                    {/* <Text style={styles.boldText}>Photo:</Text> */}
                     <Image
                       source={{ uri: selectedSite.photo.uri }}
-                      style={{ width: 200, height: 200, resizeMode: 'contain' }} />
+                      style={{ width: 200, height: 200, resizeMode: 'contain', alignSelf: 'center', marginTop: 10 }}
+                    />
                   </>
                 )}
-
-                <TouchableOpacity style={styles.shareButton} onPress={() => shareSiteAsPDF(selectedSite)}>
-                  <Text style={styles.shareText}>Share</Text>
-                </TouchableOpacity>
 
                 <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
                   <Text style={styles.closeText}>Close</Text>
                 </TouchableOpacity>
               </>
             )}
-
           </View>
         </View>
       </Modal>
+
     </>
   );
 };
 
 const styles = StyleSheet.create({
+  line: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 8,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 15,
+    paddingHorizontal: 10,
+  },
+
+  headerTitle: {
+    color: 'black',
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    flex: 1,
+  },
   container: { flex: 1, padding: 20 },
   input: { borderWidth: 1, padding: 10, marginBottom: 20 },
   siteItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 10, borderBottomWidth: 1 },
@@ -333,25 +373,43 @@ const styles = StyleSheet.create({
   shareText: { color: '#fff', fontSize: 16, textAlign: 'center' },
   shareAllButton: { backgroundColor: '#2196F3', padding: 15, borderRadius: 5 },
   buttonText: { color: '#fff', fontSize: 16, textAlign: 'center' },
-  modalContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' },
-  modalContent: { backgroundColor: '#fff', padding: 20, borderRadius: 10, width: '80%' },
+  // modalContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' },
+  // modalContent: { backgroundColor: '#fff', padding: 20, borderRadius: 10, width: '80%' },
   modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 10 },
   closeButton: { backgroundColor: 'red', padding: 10, marginTop: 10, borderRadius: 5 },
   closeText: { color: '#fff', textAlign: 'center' },
-  boldText: {
-    fontWeight: 'bold',
-  },
+  boldText: { fontWeight: 'bold', marginTop: 5, width: 90 },
   noDataText: { textAlign: 'center' },
-  header: {
-    backgroundColor: "#007bff",
-    paddingVertical: 15,
-    paddingHorizontal: 10,
+  shareIcon: { position: 'absolute', right: 10, top: 20 },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  headerTitle: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "bold",
-    textAlign: 'center'
+  modalContent: {
+    width: '90%',
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 10,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+  },
+  headerIcon: {
+    marginLeft: 'auto',
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 5,
+  },
+  normalText: {
+    color: 'black',
+    marginLeft: 5,
   },
 });
 

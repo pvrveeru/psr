@@ -161,14 +161,15 @@ const UserLoc = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Icon name="arrow-back" size={24} color="white" />
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Icon name="arrow-back" size={28} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Enter Site Details</Text>
+        <Text style={styles.headerTitle}>Submit Your Information</Text>
       </View>
       <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
         <View>
+
           <Text style={styles.label}>Name:</Text>
           <TextInput style={styles.input} placeholder="Enter your Name" value={name} onChangeText={setName} />
 
@@ -196,9 +197,11 @@ const UserLoc = () => {
           <Button title="Capture Photo" onPress={captureImage} />
           {photo && <Image source={{ uri: photo.uri }} style={styles.image} />}
 
-          <Text style={styles.details}>Position</Text>
+
           {location && location.latitude && location.longitude && (
-            <Text style={styles.info}>Latitude: {location.latitude}, Longitude: {location.longitude}</Text>
+            <><Text style={styles.details}>Position</Text>
+              <Text style={styles.info}>Latitude: {location.latitude}, Longitude: {location.longitude}</Text>
+            </>
           )}
           {dateTime && <Text style={styles.info}>Date/Time: {dateTime}</Text>}
         </View>
@@ -215,25 +218,30 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#007bff",
     paddingVertical: 15,
     paddingHorizontal: 10,
+    columnGap: 10,
   },
   backButton: {
     marginRight: 10,
   },
   headerTitle: {
-    color: "white",
+    color: "black",
     fontSize: 18,
     fontWeight: "bold",
   },
   scrollContainer: { padding: 20 },
-  input: { borderWidth: 1, borderColor: 'black', borderRadius: 8, padding: 10, marginVertical: 10 },
-  label: { fontSize: 12, fontWeight: 'bold', marginTop: 0 },
-  commentBox: { borderWidth: 1, borderColor: 'black', borderRadius: 8, padding: 10, marginVertical: 10, textAlignVertical: 'top' },
+  // header: {fontSize: 24, fontWeight: 'bold', textAlign: 'center', marginBottom: 20 },
+  input: { borderWidth: 1, borderColor: "black", borderRadius: 8, padding: 10, marginVertical: 10 },
+  label: { fontSize: 12, fontWeight: "bold", marginTop: 0 },
+  commentBox: { borderWidth: 1, borderColor: "black", borderRadius: 8, padding: 10, marginVertical: 10, textAlignVertical: "top" },
   image: { width: 200, height: 200, borderRadius: 10, marginVertical: 10 },
   details: { fontSize: 16, fontWeight: 'bold', marginTop: 10 },
   info: { fontSize: 16, marginTop: 10 },
+  // submitButton: { backgroundColor: "#28a745", padding: 15, borderRadius: 10, alignItems: "center", marginTop: 20 },
+  // submitText: { color: "white", fontSize: 18, fontWeight: "bold" },
+  shareIcon: { position: 'absolute', left: 0, top: 0, },
+
   submitButton: { backgroundColor: '#28a745', padding: 15, borderRadius: 10, alignItems: 'center', marginTop: 20 },
   submitText: { color: 'white', fontSize: 18, fontWeight: 'bold' },
 });
