@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import * as ImagePicker from "react-native-image-picker";
 import Geolocation from "react-native-geolocation-service";
+import Icon from 'react-native-vector-icons/Ionicons';
 import { Picker } from "@react-native-picker/picker";
 import { useNavigation, useRoute } from "@react-navigation/native";
 
@@ -155,6 +156,10 @@ const UserLoc = () => {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
         <View>
+          <Text style={styles.header}>Submit Your Information</Text>
+          <TouchableOpacity style={styles.shareIcon} onPress={() => navigation.goBack()}>
+            <Icon name="arrow-back" size={28} />
+          </TouchableOpacity>
           <Text style={styles.label}>Name:</Text>
           <TextInput style={styles.input} placeholder="Enter your Name" value={name} onChangeText={setName} />
 
@@ -182,9 +187,11 @@ const UserLoc = () => {
           <Button title="Capture Photo" onPress={captureImage} />
           {photo && <Image source={{ uri: photo.uri }} style={styles.image} />}
 
-          <Text style={styles.details}>Position</Text>
+         
           {location && location.latitude && location.longitude && (
+            <><Text style={styles.details}>Position</Text>
             <Text style={styles.info}>Latitude: {location.latitude}, Longitude: {location.longitude}</Text>
+            </> 
           )}
           {dateTime && <Text style={styles.info}>Date/Time: {dateTime}</Text>}
         </View>
@@ -199,6 +206,7 @@ const UserLoc = () => {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContainer: { padding: 20 },
+  header: {fontSize: 24, fontWeight: 'bold', textAlign: 'center', marginBottom: 20 },
   input: { borderWidth: 1, borderColor: "black", borderRadius: 8, padding: 10, marginVertical: 10 },
   label: { fontSize: 12, fontWeight: "bold", marginTop: 0 },
   commentBox: { borderWidth: 1, borderColor: "black", borderRadius: 8, padding: 10, marginVertical: 10, textAlignVertical: "top" },
@@ -207,6 +215,8 @@ const styles = StyleSheet.create({
   info: { fontSize: 16, marginTop: 10 },
   submitButton: { backgroundColor: "#28a745", padding: 15, borderRadius: 10, alignItems: "center", marginTop: 20 },
   submitText: { color: "white", fontSize: 18, fontWeight: "bold" },
+  shareIcon: {position: 'absolute', left: 0, top: 0,},
+
 });
 
 export default UserLoc;

@@ -14,8 +14,8 @@ const Dashboard = () => {
   const [siteData, setSiteData] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedSite, setSelectedSite] = useState(null);
-console.log('sitesJson', sitesJson);
-useEffect(() => {
+
+  useEffect(() => {
   const loadSites = async () => {
     try {
       const storedSites = await AsyncStorage.getItem('sites');
@@ -223,12 +223,11 @@ const saveSites = async (newData) => {
   console.log('selectedSite', selectedSite);
   return (
     <View style={styles.container}>
-      <View style={styles.searchHeader}> 
-      <TextInput style={styles.input} placeholder="Search by date..." />
-      <TouchableOpacity onPress={shareAllSitesAsPDF}>
+      <Text style={styles.header}>Work Report</Text>
+      <TouchableOpacity style={styles.shareIcon} onPress={shareAllSitesAsPDF}>
         <Icon name="share-social-outline" size={28} />
       </TouchableOpacity>
-      </View>
+      <TextInput style={styles.input} placeholder="Search by date..." />
 
       <ScrollView style={styles.scrollView}>
         {siteData.length === 0 ? (
@@ -240,9 +239,6 @@ const saveSites = async (newData) => {
                 <Text style={styles.siteName}>{site.name}</Text>
               </TouchableOpacity>
               <Text style={styles.siteDate}>{site.dateTime}</Text>
-              <TouchableOpacity style={styles.shareButton} onPress={() => shareSiteAsPDF(site)}>
-                <Text style={styles.shareText}>Share</Text>
-              </TouchableOpacity>
             </View>
           ))
         )}
@@ -258,41 +254,61 @@ const saveSites = async (newData) => {
           <View style={styles.modalContent}>
           {selectedSite && (
   <>
-    <Text style={styles.boldText}>Site:</Text>
-    <Text style={styles.modalTitle}>{selectedSite.site}</Text>
+   <Text style={styles.popHeader}>Work Information</Text>
+      <TouchableOpacity style={styles.shareIcon} onPress={() => shareSiteAsPDF(selectedSite)}>
+        <Icon name="share-social-outline" size={28} />
+      </TouchableOpacity>
 
-    <Text style={styles.boldText}>Client:</Text>
-    <Text>{selectedSite.client}</Text>
+    <View style={styles.inputSection}>
+      <Text style={styles.boldText}>Site:</Text>
+      <Text style={styles.inputText}>{selectedSite.site}</Text>
+    </View>
 
-    <Text style={styles.boldText}>Activity:</Text>
-    <Text>{selectedSite.activity}</Text>
+    <View style={styles.inputSection}>
+      <Text style={styles.boldText}>Client:</Text>
+      <Text style={styles.inputText}>{selectedSite.client}</Text>
+    </View>
 
-    <Text style={styles.boldText}>Assigned:</Text>
-    <Text>{selectedSite.assigned}</Text>
+    <View style={styles.inputSection}>
+      <Text style={styles.boldText}>Activity:</Text>
+      <Text style={styles.inputText}>{selectedSite.activity}</Text>
+    </View>
 
-    <Text style={styles.boldText}>Remarks:</Text>
-    <Text>{selectedSite.remarks}</Text>
+    <View style={styles.inputSection}>
+      <Text style={styles.boldText}>Assigned By:</Text>
+      <Text style={styles.inputText}>{selectedSite.assigned}</Text>
+    </View>
 
-    <Text style={styles.boldText}>Date & Time:</Text>
-    <Text>{selectedSite.dateTime}</Text>
+    <View style={styles.inputSection}>
+      <Text style={styles.boldText}>Remarks:</Text>
+      <Text style={styles.inputText}>{selectedSite.remarks}</Text>
+    </View>
 
-    <Text style={styles.boldText}>Location:</Text>
-    <Text>Latitude: {selectedSite.location.latitude}</Text>
-    <Text>Longitude: {selectedSite.location.longitude}</Text>
+    <View style={styles.inputSection}>
+      <Text style={styles.boldText}>Date & Time:</Text>
+      <Text style={styles.inputText}>{selectedSite.dateTime}</Text>
+    </View>
+
+    <View style={styles.inputSection}>
+      <Text style={styles.boldText}>Latitude:</Text>
+      <Text style={styles.inputText}>{selectedSite.location.latitude}</Text>
+    </View>
+
+    <View style={styles.inputSection}>
+      <Text style={styles.boldText}>Longitude:</Text>
+      <Text style={styles.inputText}>{selectedSite.location.longitude}</Text>    
+    </View>
 
     {selectedSite.photo && (
       <>
-        <Text style={styles.boldText}>Photo:</Text>
+      <View style={styles.inputSection}>
         <Image
           source={{ uri: selectedSite.photo.uri }}
           style={{ width: 200, height: 200, resizeMode: 'contain' }}
         />
+        </View>
       </>
     )}
-
-    <TouchableOpacity style={styles.shareButton} onPress={() => shareSiteAsPDF(selectedSite)}>
-      <Text style={styles.shareText}>Share</Text>
-    </TouchableOpacity>
 
     <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
       <Text style={styles.closeText}>Close</Text>
@@ -310,6 +326,10 @@ const saveSites = async (newData) => {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20 },
   searchHeader: { flex: 1},
+  inputText: { fontSize:16, paddingLeft:10,},
+  inputSection: {flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+  header: {fontSize: 24, fontWeight: 'bold', textAlign: 'center', marginBottom: 20 },
+  popHeader: {fontSize: 18, fontWeight: 'bold', textAlign: 'center', marginBottom: 20, borderBottomColor: '#ddd', borderBottomWidth:1, paddingBottom:10,},
   input: { borderWidth: 1, padding: 10, marginBottom: 20 },
   siteItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 10, borderBottomWidth: 1 },
   siteName: { fontSize: 18, fontWeight: 'bold' },
@@ -323,10 +343,9 @@ const styles = StyleSheet.create({
   modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 10 },
   closeButton: { backgroundColor: 'red', padding: 10, marginTop: 10, borderRadius: 5 },
   closeText: { color: '#fff', textAlign: 'center' },
-  boldText: {
-    fontWeight: 'bold',
-  },
-  noDataText: {textAlign: 'center'}
+  boldText: { fontWeight: 'bold', marginTop: 5, width: 90},
+  noDataText: {textAlign: 'center'},
+  shareIcon: {position: 'absolute', right: 10, top: 20,},
 });
 
 export default Dashboard;
