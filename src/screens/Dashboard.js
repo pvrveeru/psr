@@ -1,20 +1,19 @@
-import { useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, Modal, Alert } from 'react-native';
 import RNHTMLtoPDF from 'react-native-html-to-pdf';
 import Share from 'react-native-share';
+import Icon from 'react-native-vector-icons/Ionicons';
 
 const Dashboard = () => {
   const route = useRoute();
+  const navigation = useNavigation();
   const [siteData, setSiteData] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedSite, setSelectedSite] = useState(null);
 
-  useEffect(() => {
-    if (route.params?.userData) {
-      setSiteData((prevData) => [...prevData, route.params.userData]);
-    }
-  }, [route.params?.userData]);
+  
+
   // Function to open modal with site details
   const openModal = (site) => {
     setSelectedSite(site);
@@ -47,6 +46,10 @@ const Dashboard = () => {
     }
   };
 
+  const addSite = () => {
+    navigation.navigate('AddSite');
+}
+
   // Function to generate and share PDF for all sites
   const shareAllSitesAsPDF = async () => {
     let htmlContent = '<h1>All Sites</h1>';
@@ -76,10 +79,14 @@ const Dashboard = () => {
       Alert.alert('Error', 'Failed to generate PDF');
     }
   };
-
+console.log('siteDats', siteData);
   return (
     <View style={styles.container}>
       <TextInput style={styles.input} placeholder="Search by date..." />
+      <TouchableOpacity onPress={shareAllSitesAsPDF}>
+        <Icon name="share-social-outline" size={28} />           
+      </TouchableOpacity>
+      
       <FlatList
         data={siteData}
         keyExtractor={(item) => item.id.toString()}
@@ -95,8 +102,9 @@ const Dashboard = () => {
           </View>
         )}
       />
-      <TouchableOpacity style={styles.shareAllButton} onPress={shareAllSitesAsPDF}>
-        <Text style={styles.buttonText}>Share All Sites</Text>
+      
+      <TouchableOpacity style={styles.shareAllButton} onPress={addSite}>
+      <Text style={styles.shareText}>Add Site</Text>         
       </TouchableOpacity>
 
       {/* Modal for Site Details */}
@@ -109,6 +117,7 @@ const Dashboard = () => {
                 <Text><strong>Date:</strong> {selectedSite.date}</Text>
                 <Text><strong>Location:</strong> {selectedSite.location}</Text>
                 <Text><strong>Details:</strong> {selectedSite.details}</Text>
+                
                 <TouchableOpacity style={styles.shareButton} onPress={() => shareSiteAsPDF(selectedSite)}>
                   <Text style={styles.shareText}>Share</Text>
                 </TouchableOpacity>
@@ -131,7 +140,7 @@ const styles = StyleSheet.create({
   siteName: { fontSize: 18, fontWeight: 'bold' },
   siteDate: { fontSize: 16, color: 'gray' },
   shareButton: { backgroundColor: '#ff9800', padding: 8, borderRadius: 5 },
-  shareText: { color: '#fff', fontSize: 14 },
+  shareText: { color: '#fff', fontSize: 16, textAlign: 'center' },
   shareAllButton: { backgroundColor: '#2196F3', padding: 15, borderRadius: 5, marginTop: 20 },
   buttonText: { color: '#fff', fontSize: 16, textAlign: 'center' },
   modalContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' },

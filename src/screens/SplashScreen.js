@@ -14,14 +14,14 @@ const SplashScreen = () => {
   return (
     <View style={styles.container}>
       <Image source={require('../assets/images/logo.png')} style={styles.logo} />
-      <Text style={styles.text}>Welcome to the App</Text>
+      {/* <Text style={styles.text}>Welcome to the App</Text> */}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' },
-  logo: { width: 150, height: 150, marginBottom: 20 },
+  logo: { width: 296, height: 200, marginBottom: 20 },
   text: { fontSize: 18, fontWeight: 'bold' },
 });
 
