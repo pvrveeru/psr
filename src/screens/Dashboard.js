@@ -355,6 +355,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 15,
     paddingHorizontal: 10,
+    backgroundColor: '#ccc'
   },
 
   headerTitle: {
