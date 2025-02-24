@@ -136,8 +136,8 @@ const Dashboard = () => {
         html: htmlContent,
         fileName: 'All_Sites',
         base64: false,
-        width: 612, // A4 Width
-        height: 792, // A4 Height
+        width: 612,
+        height: 792,
       });
 
       await Share.open({
@@ -146,7 +146,7 @@ const Dashboard = () => {
         title: 'Share All Sites',
       });
     } catch (error) {
-      Alert.alert('Error', 'Failed to generate PDF');
+      console.log('Error', 'Failed to generate PDF');
     }
   };
 
@@ -215,8 +215,8 @@ const Dashboard = () => {
         html: htmlContent,
         fileName: 'All_Sites',
         base64: false,
-        width: 612, // A4 Width
-        height: 792, // A4 Height
+        width: 612,
+        height: 792,
       });
 
       await Share.open({
@@ -225,7 +225,7 @@ const Dashboard = () => {
         title: 'Share All Sites',
       });
     } catch (error) {
-      Alert.alert('Error', 'Failed to generate PDF');
+      console.log('Error', 'Failed to generate PDF');
     }
   };
   const formatDateTime = (dateTimeString) => {
