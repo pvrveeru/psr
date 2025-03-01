@@ -33,6 +33,7 @@ const Dashboard = () => {
     };
   }, []);
 
+  console.log('selectedSite', selectedSite);
   useEffect(() => {
     const loadSites = async () => {
       try {
@@ -229,7 +230,7 @@ const Dashboard = () => {
     }
   };
   const formatDateTime = (dateTimeString) => {
-    if (!dateTimeString) {return 'No Date';}
+    if (!dateTimeString) { return 'No Date'; }
     const parsedDate = moment(dateTimeString, ['DD/MM/YYYY HH:mm:ss', 'YYYY-MM-DD HH:mm:ss', 'YYYY/MM/DD HH:mm:ss']);
     if (!parsedDate.isValid()) {
       return 'Invalid Date';
@@ -275,66 +276,73 @@ const Dashboard = () => {
           </TouchableOpacity>
         )}
       </View>
-      <Modal visible={modalVisible} transparent={true} animationType="slide">
+      <Modal visible={modalVisible} transparent={true} animationType="slide" style={{ flex: 1 }}>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.headerTitle}>Work Information</Text>
-              <TouchableOpacity onPress={() => shareSiteAsPDF(selectedSite)} style={styles.headerIcon}>
-                <Icon name="share-social-outline" size={28} color="black" />
-              </TouchableOpacity>
-            </View>
-
-            {selectedSite && (
-              <>
-                <View style={styles.line}>
-                  <Text style={styles.boldText}>Site:</Text>
-                  <Text style={styles.normalText}>{selectedSite.site}</Text>
-                </View>
-                <View style={styles.line}>
-                  <Text style={styles.boldText}>Activity:</Text>
-                  <Text style={styles.normalText}>{selectedSite.activity}</Text>
-                </View>
-                <View style={styles.line}>
-                  <Text style={styles.boldText}>Client:</Text>
-                  <Text>{selectedSite.client}</Text>
-                </View>
-                <View style={styles.line}>
-                  <Text style={styles.boldText}>Assigned:</Text>
-                  <Text>{selectedSite.assigned}</Text>
-                </View>
-                <View style={styles.line}>
-                  <Text style={styles.boldText}>Remarks:</Text>
-                  <Text>{selectedSite.remarks}</Text>
-                </View>
-                <View style={styles.line}>
-                  <Text style={styles.boldText}>Date & Time:</Text>
-                  <Text>{formatDateTime(selectedSite.dateTime)}</Text>
-                </View>
-                <View style={styles.line}>
-                  <Text style={styles.boldText}>Latitude:</Text>
-                  <Text>{selectedSite.location.latitude}</Text>
-                </View>
-                <View style={styles.line}>
-                  <Text style={styles.boldText}>Longitude:</Text>
-                  <Text>{selectedSite.location.longitude}</Text>
-                </View>
-
-                {selectedSite.photo && (
-                  <>
-                    {/* <Text style={styles.boldText}>Photo:</Text> */}
-                    <Image
-                      source={{ uri: selectedSite.photo.uri }}
-                      style={{ width: 200, height: 200, resizeMode: 'contain', alignSelf: 'center', marginTop: 10 }}
-                    />
-                  </>
-                )}
-
-                <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
-                  <Text style={styles.closeText}>Close</Text>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.headerTitle}>Work Information</Text>
+                <TouchableOpacity onPress={() => shareSiteAsPDF(selectedSite)} style={styles.headerIcon}>
+                  <Icon name="share-social-outline" size={28} color="black" />
                 </TouchableOpacity>
-              </>
-            )}
+              </View>
+
+              {selectedSite && (
+                <>
+                  <View style={styles.line}>
+                    <Text style={styles.boldText}>Site:</Text>
+                    <Text style={styles.normalText}>{selectedSite.site}</Text>
+                  </View>
+                  <View style={styles.line}>
+                    <Text style={styles.boldText}>Activity:</Text>
+                    <Text style={styles.normalText}>{selectedSite.activity}</Text>
+                  </View>
+                  <View style={styles.line}>
+                    <Text style={styles.boldText}>Client:</Text>
+                    <Text>{selectedSite.client}</Text>
+                  </View>
+                  <View style={styles.line}>
+                    <Text style={styles.boldText}>Assigned:</Text>
+                    <Text>{selectedSite.assigned}</Text>
+                  </View>
+                  <View style={styles.line}>
+                    <Text style={styles.boldText}>Remarks:</Text>
+                    <Text>{selectedSite.remarks}</Text>
+                  </View>
+                  <View style={styles.line}>
+                    <Text style={styles.boldText}>Date & Time:</Text>
+                    <Text>{formatDateTime(selectedSite.dateTime)}</Text>
+                  </View>
+                  <View style={styles.line}>
+                    <Text style={styles.boldText}>Latitude:</Text>
+                    <Text>{selectedSite.location.latitude}</Text>
+                  </View>
+                  <View style={styles.line}>
+                    <Text style={styles.boldText}>Longitude:</Text>
+                    <Text>{selectedSite.location.longitude}</Text>
+                  </View>
+
+                  {selectedSite.photo && selectedSite.photo.length > 0 && (
+                    <>
+                      <Text style={styles.boldText}>Photos:</Text>
+                      <View style={styles.imageContainer}>
+                        {selectedSite.photo.map((photo, index) => (
+                          <Image
+                            key={index}
+                            source={{ uri: photo.uri }}
+                            style={styles.image}
+                          />
+                        ))}
+                      </View>
+                    </>
+                  )}
+
+                  <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
+                    <Text style={styles.closeText}>Close</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -374,8 +382,6 @@ const styles = StyleSheet.create({
   shareText: { color: '#fff', fontSize: 16, textAlign: 'center' },
   shareAllButton: { backgroundColor: '#2196F3', padding: 15, borderRadius: 5 },
   buttonText: { color: '#fff', fontSize: 16, textAlign: 'center' },
-  // modalContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' },
-  // modalContent: { backgroundColor: '#fff', padding: 20, borderRadius: 10, width: '80%' },
   modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 10 },
   closeButton: { backgroundColor: 'red', padding: 10, marginTop: 10, borderRadius: 5 },
   closeText: { color: '#fff', textAlign: 'center' },
@@ -385,14 +391,14 @@ const styles = StyleSheet.create({
   modalContainer: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: 'flex-end',
   },
   modalContent: {
-    width: '90%',
+    width: '100%',
     backgroundColor: 'white',
     padding: 20,
     borderRadius: 10,
+    height: '80%',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -412,6 +418,8 @@ const styles = StyleSheet.create({
     color: 'black',
     marginLeft: 5,
   },
+  imageContainer: { flexDirection: 'row', flexWrap: 'wrap', marginVertical: 10 },
+  image: { width: 100, height: 100, borderRadius: 10, marginVertical: 10, marginRight: 5 },
 });
 
 export default Dashboard;

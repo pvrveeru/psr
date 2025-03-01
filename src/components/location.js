@@ -30,7 +30,7 @@ const UserLoc = () => {
   const [activity, setActivity] = useState('');
   const [assigned, setAssigned] = useState(''); // Dropdown state
   const [remarks, setRemarks] = useState('');
-  const [photo, setPhoto] = useState(null);
+  const [photo, setPhoto] = useState([]);
   const [location, setLocation] = useState(null);
   const [dateTime, setDateTime] = useState('');
   const assignedByOptions = ['User1', 'User2', 'User3'];
@@ -75,33 +75,40 @@ const UserLoc = () => {
   const captureImage = async () => {
     const cameraPermission = await requestCameraPermission();
     if (!cameraPermission) {
-      Alert.alert('Permission Denied', 'Camera access is required.');
-      return;
+        Alert.alert('Permission Denied', 'Camera access is required.');
+        return;
+    }
+
+    // Check if the limit of 5 images has been reached
+    if (photo.length >= 5) {
+        Alert.alert('Limit Reached', 'You can only upload a maximum of 5 images.');
+        return;
     }
 
     try {
-      const result = await ImagePicker.launchCamera({
-        mediaType: 'photo',
-        cameraType: 'front',
-        saveToPhotos: true,
-      });
+        const result = await ImagePicker.launchCamera({
+            mediaType: 'photo',
+            cameraType: 'front',
+            saveToPhotos: true,
+        });
 
-      if (result.didCancel) {
-        Alert.alert('Cancelled', 'You cancelled the camera operation.');
-      } else if (result.errorCode) {
-        console.error('Camera Error:', result.errorMessage);
-        Alert.alert('Camera Error', `Code: ${result.errorCode}, Message: ${result.errorMessage}`);
-      } else if (result.assets && result.assets.length > 0) {
-        setPhoto(result.assets[0]);
-        fetchLocation();
-      } else {
-        Alert.alert('Error', 'No photo was captured.');
-      }
+        if (result.didCancel) {
+            Alert.alert('Cancelled', 'You cancelled the camera operation.');
+        } else if (result.errorCode) {
+            console.error('Camera Error:', result.errorMessage);
+            Alert.alert('Camera Error', `Code: ${result.errorCode}, Message: ${result.errorMessage}`);
+        } else if (result.assets && result.assets.length > 0) {
+            // Add the new photo to the existing array of photos
+            setPhoto((prevPhotos) => [...prevPhotos, result.assets[0]]);
+            fetchLocation();
+        } else {
+            Alert.alert('Error', 'No photo was captured.');
+        }
     } catch (error) {
-      console.error('Unexpected Camera Error:', error);
-      Alert.alert('Unexpected Error', 'Something went wrong while opening the camera.');
+        console.error('Unexpected Camera Error:', error);
+        Alert.alert('Unexpected Error', 'Something went wrong while opening the camera.');
     }
-  };
+};
 
   // Fetch user's location
   const fetchLocation = async () => {
@@ -194,7 +201,11 @@ const UserLoc = () => {
             numberOfLines={4}
           />
           <Button title="Capture Photo" onPress={captureImage} />
-          {photo && <Image source={{ uri: photo.uri }} style={styles.image} />}
+          <View style={styles.imageContainer}>
+            {photo.map((photo, index) => (
+              <Image key={index} source={{ uri: photo.uri }} style={styles.image} />
+            ))}
+          </View>
           {/* {location && location.latitude && location.longitude && (
             <><Text style={styles.details}>Position</Text>
               <Text style={styles.info}>Latitude: {location.latitude}, Longitude: {location.longitude}</Text>
@@ -235,7 +246,8 @@ const styles = StyleSheet.create({
   input: { borderWidth: 1, borderColor: 'black', borderRadius: 8, padding: 10, marginVertical: 10 },
   label: { fontSize: 12, fontWeight: 'bold', marginTop: 0 },
   commentBox: { borderWidth: 1, borderColor: 'black', borderRadius: 8, padding: 10, marginVertical: 10, textAlignVertical: 'top' },
-  image: { width: 200, height: 200, borderRadius: 10, marginVertical: 10 },
+  image: { width: 100, height: 100, borderRadius: 10, marginVertical: 10, marginRight: 5 },
+  imageContainer: { flexDirection: 'row', flexWrap: 'wrap', marginVertical: 10 },
   details: { fontSize: 16, fontWeight: 'bold', marginTop: 10 },
   info: { fontSize: 16, marginTop: 10 },
   // submitButton: { backgroundColor: "#28a745", padding: 15, borderRadius: 10, alignItems: "center", marginTop: 20 },

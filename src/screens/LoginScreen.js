@@ -1,10 +1,22 @@
 import { useNavigation } from '@react-navigation/native';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, Alert } from 'react-native';
+import DeviceInfo from 'react-native-device-info';
 
 const LoginScreen = () => {
-    const navigation = useNavigation();
+  const navigation = useNavigation();
   const [mobile, setMobile] = useState('');
+  const [deviceId, setDeviceId] = useState('');
+
+  useEffect(() => {
+    const fetchDeviceId = async () => {
+      const id = await DeviceInfo.getUniqueId();
+      setDeviceId(id);
+    };
+
+    fetchDeviceId();
+  }, []);
+
 
   const handleLogin = () => {
     if (mobile.length === 10) {
@@ -18,6 +30,8 @@ const LoginScreen = () => {
     <View style={styles.container}>
       <Image source={require('../assets/images/slogo.png')} style={styles.logo} />
       <Text style={styles.label}>Enter Mobile Number</Text>
+      <Text style={{ fontSize: 18, fontWeight: 'bold' }}>Device ID:</Text>
+      <Text style={{ fontSize: 16, marginTop: 10 }}>{deviceId}</Text>
       <TextInput
         style={styles.input}
         keyboardType="phone-pad"
