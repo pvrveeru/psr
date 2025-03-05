@@ -1,3 +1,8 @@
+/* eslint-disable react-native/no-inline-styles */
+/* eslint-disable no-catch-shadow */
+/* eslint-disable no-shadow */
+/* eslint-disable no-unused-vars */
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useNavigation, useRoute } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, Modal, TouchableOpacity, StyleSheet, Alert, ScrollView, Image, Keyboard } from 'react-native';
@@ -7,6 +12,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 // import Modal from 'react-native-modal';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import moment from 'moment';
+import { getAllAssignments } from '../services/Apiservices';
 
 const Dashboard = () => {
   const route = useRoute();
@@ -16,6 +22,10 @@ const Dashboard = () => {
   const [selectedSite, setSelectedSite] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+  const [userData, setUserData] = useState('');
+  const [assignments, setAssignments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
@@ -33,41 +43,45 @@ const Dashboard = () => {
     };
   }, []);
 
-  console.log('selectedSite', selectedSite);
   useEffect(() => {
-    const loadSites = async () => {
+    const getUserId = async () => {
       try {
-        const storedSites = await AsyncStorage.getItem('sites');
-        if (storedSites) {
-          setSiteData(JSON.parse(storedSites));
+        const response = await AsyncStorage.getItem('userData');
+        if (response) {
+          const parsedData = JSON.parse(response);
+          setUserData(parsedData);
         }
       } catch (error) {
-        console.error('Error loading sites:', error);
+        console.error('Error fetching user data from AsyncStorage:', error);
       }
     };
 
-    loadSites();
-  }, [route.params?.userData]);
-
+    getUserId();
+  }, []);
   useEffect(() => {
-    if (route.params?.userData) {
-      const newSite = route.params.userData;
-      setSiteData((prevData) => {
-        const isDuplicate = prevData.some(item => item.name === newSite.name);
-        if (!isDuplicate) {
-          const updatedData = [...prevData, newSite];
-          return updatedData;
+    const fetchAssignments = async () => {
+      try {
+        if (userData?.userId) { // Ensure userId is available
+          const data = await getAllAssignments(userData.userId);
+          setAssignments(data);
         }
-        return prevData;
-      });
-    }
-  }, [route.params?.userData]);
+      } catch (err) {
+        setError(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAssignments();
+  }, [userData]);
+  console.log('assignments', assignments);
 
   const filteredSites = siteData?.filter(site => {
     return site.dateTime.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
   const openModal = (site) => {
+    console.log('site', site);
     setSelectedSite(site);
     setModalVisible(true);
   };
@@ -229,14 +243,6 @@ const Dashboard = () => {
       console.log('Error', 'Failed to generate PDF');
     }
   };
-  const formatDateTime = (dateTimeString) => {
-    if (!dateTimeString) { return 'No Date'; }
-    const parsedDate = moment(dateTimeString, ['DD/MM/YYYY HH:mm:ss', 'YYYY-MM-DD HH:mm:ss', 'YYYY/MM/DD HH:mm:ss']);
-    if (!parsedDate.isValid()) {
-      return 'Invalid Date';
-    }
-    return parsedDate.format('D/M/YYYY hh:mm A');
-  };
 
   return (
     <>
@@ -257,15 +263,15 @@ const Dashboard = () => {
           />
         </View>
         <ScrollView style={styles.scrollView}>
-          {filteredSites?.length === 0 ? (
+          {assignments?.length === 0 ? (
             <Text style={styles.noDataText}>No sites available</Text>
           ) : (
-            filteredSites?.map((site, index) => (
+            assignments?.map((site, index) => (
               <View key={index} style={styles.siteItem}>
                 <TouchableOpacity onPress={() => openModal(site)}>
                   <Text style={styles.siteName}>{site.name}</Text>
                 </TouchableOpacity>
-                <Text style={styles.siteDate}>{formatDateTime(site.dateTime)}</Text>
+                {/* <Text style={styles.siteDate}>{formatDateTime(site.dateTime)}</Text> */}
               </View>
             ))
           )}
@@ -286,50 +292,66 @@ const Dashboard = () => {
                   <Icon name="share-social-outline" size={28} color="black" />
                 </TouchableOpacity>
               </View>
-
               {selectedSite && (
                 <>
                   <View style={styles.line}>
                     <Text style={styles.boldText}>Site:</Text>
-                    <Text style={styles.normalText}>{selectedSite.site}</Text>
-                  </View>
-                  <View style={styles.line}>
-                    <Text style={styles.boldText}>Activity:</Text>
-                    <Text style={styles.normalText}>{selectedSite.activity}</Text>
-                  </View>
-                  <View style={styles.line}>
-                    <Text style={styles.boldText}>Client:</Text>
-                    <Text>{selectedSite.client}</Text>
-                  </View>
-                  <View style={styles.line}>
-                    <Text style={styles.boldText}>Assigned:</Text>
-                    <Text>{selectedSite.assigned}</Text>
-                  </View>
-                  <View style={styles.line}>
-                    <Text style={styles.boldText}>Remarks:</Text>
-                    <Text>{selectedSite.remarks}</Text>
-                  </View>
-                  <View style={styles.line}>
-                    <Text style={styles.boldText}>Date & Time:</Text>
-                    <Text>{formatDateTime(selectedSite.dateTime)}</Text>
-                  </View>
-                  <View style={styles.line}>
-                    <Text style={styles.boldText}>Latitude:</Text>
-                    <Text>{selectedSite.location.latitude}</Text>
-                  </View>
-                  <View style={styles.line}>
-                    <Text style={styles.boldText}>Longitude:</Text>
-                    <Text>{selectedSite.location.longitude}</Text>
+                    <Text style={styles.normalText}>{selectedSite?.siteId}</Text>
                   </View>
 
-                  {selectedSite.photo && selectedSite.photo.length > 0 && (
+                  <View style={styles.line}>
+                    <Text style={styles.boldText}>Activity:</Text>
+                    <Text style={styles.normalText}>{selectedSite?.activity}</Text>
+                  </View>
+
+                  <View style={styles.line}>
+                    <Text style={styles.boldText}>Client:</Text>
+                    <Text style={styles.normalText}>{selectedSite?.clientName}</Text>
+                  </View>
+
+                  <View style={styles.line}>
+                    <Text style={styles.boldText}>Assigned By:</Text>
+                    <Text style={styles.normalText}>{selectedSite?.assignedBy?.assignor}</Text>
+                  </View>
+
+                  <View style={styles.line}>
+                    <Text style={styles.boldText}>Remarks:</Text>
+                    <Text style={styles.normalText}>{selectedSite?.remarks}</Text>
+                  </View>
+
+                  <View style={styles.line}>
+                    <Text style={styles.boldText}>Latitude:</Text>
+                    <Text style={styles.normalText}>{selectedSite?.latitude}</Text>
+                  </View>
+
+                  <View style={styles.line}>
+                    <Text style={styles.boldText}>Longitude:</Text>
+                    <Text style={styles.normalText}>{selectedSite?.longitude}</Text>
+                  </View>
+
+                  <View style={styles.line}>
+                    <Text style={styles.boldText}>User Name:</Text>
+                    <Text style={styles.normalText}>{selectedSite?.userId?.userName}</Text>
+                  </View>
+
+                  <View style={styles.line}>
+                    <Text style={styles.boldText}>Phone Number:</Text>
+                    <Text style={styles.normalText}>{selectedSite?.userId?.phoneNumber}</Text>
+                  </View>
+
+                  <View style={styles.line}>
+                    <Text style={styles.boldText}>Device ID:</Text>
+                    <Text style={styles.normalText}>{selectedSite?.userId?.deviceId}</Text>
+                  </View>
+
+                  {selectedSite?.galleryImages && selectedSite?.galleryImages.length > 0 && (
                     <>
                       <Text style={styles.boldText}>Photos:</Text>
                       <View style={styles.imageContainer}>
-                        {selectedSite.photo.map((photo, index) => (
+                        {selectedSite?.galleryImages.map((photo, index) => (
                           <Image
                             key={index}
-                            source={{ uri: photo.uri }}
+                            source={{ uri: photo }} // Fixed issue with incorrect `photo.uri`
                             style={styles.image}
                           />
                         ))}

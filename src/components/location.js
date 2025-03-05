@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Text,
   View,
@@ -19,6 +19,10 @@ import { Picker } from '@react-native-picker/picker';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { getAllAssignors, postAssignment } from '../services/Apiservices';
+import AssignorDropdown from './AssignorDropdown ';
+import SelectDropdown from 'react-native-select-dropdown';
+import FontAwesome from 'react-native-vector-icons/FontAwesome';
 
 const UserLoc = () => {
   const navigation = useNavigation();
@@ -28,14 +32,49 @@ const UserLoc = () => {
   const [client, setClient] = useState('');
   const [site, setSite] = useState('');
   const [activity, setActivity] = useState('');
-  const [assigned, setAssigned] = useState(''); // Dropdown state
+  const [assigned, setAssigned] = useState('');
   const [remarks, setRemarks] = useState('');
   const [photo, setPhoto] = useState([]);
   const [location, setLocation] = useState(null);
   const [dateTime, setDateTime] = useState('');
-  const assignedByOptions = ['User1', 'User2', 'User3'];
+  const [assignors, setAssignors] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+    const [userData, setUserData] = useState('');
 
-  // Request camera permission (Android)
+    useEffect(() => {
+      const getUserId = async () => {
+        try {
+          const response = await AsyncStorage.getItem('userData');
+          if (response) {
+            const parsedData = JSON.parse(response);
+            setUserData(parsedData);
+          }
+        // eslint-disable-next-line no-catch-shadow
+        } catch (error) {
+          console.error('Error fetching user data from AsyncStorage:', error);
+        }
+      };
+
+      getUserId();
+    }, []);
+
+  useEffect(() => {
+    const fetchAssignors = async () => {
+      try {
+        const data = await getAllAssignors();
+        setAssignors(data.map(item => item.assignor));
+        // setAssignors(data);
+      } catch (err) {
+        setError(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAssignors();
+  }, []);
+
   const requestCameraPermission = async () => {
     if (Platform.OS === 'android') {
       const granted = await PermissionsAndroid.request(
@@ -53,7 +92,6 @@ const UserLoc = () => {
     return true; // Assume iOS permissions are granted
   };
 
-  // Request location permission (Android)
   const requestLocationPermission = async () => {
     if (Platform.OS === 'android') {
       const granted = await PermissionsAndroid.request(
@@ -71,46 +109,44 @@ const UserLoc = () => {
     return true; // Assume iOS permissions are granted
   };
 
-  // Capture image using the camera
   const captureImage = async () => {
     const cameraPermission = await requestCameraPermission();
     if (!cameraPermission) {
-        Alert.alert('Permission Denied', 'Camera access is required.');
-        return;
+      Alert.alert('Permission Denied', 'Camera access is required.');
+      return;
     }
 
     // Check if the limit of 5 images has been reached
     if (photo.length >= 5) {
-        Alert.alert('Limit Reached', 'You can only upload a maximum of 5 images.');
-        return;
+      Alert.alert('Limit Reached', 'You can only upload a maximum of 5 images.');
+      return;
     }
 
     try {
-        const result = await ImagePicker.launchCamera({
-            mediaType: 'photo',
-            cameraType: 'front',
-            saveToPhotos: true,
-        });
+      const result = await ImagePicker.launchCamera({
+        mediaType: 'photo',
+        cameraType: 'front',
+        saveToPhotos: true,
+      });
 
-        if (result.didCancel) {
-            Alert.alert('Cancelled', 'You cancelled the camera operation.');
-        } else if (result.errorCode) {
-            console.error('Camera Error:', result.errorMessage);
-            Alert.alert('Camera Error', `Code: ${result.errorCode}, Message: ${result.errorMessage}`);
-        } else if (result.assets && result.assets.length > 0) {
-            // Add the new photo to the existing array of photos
-            setPhoto((prevPhotos) => [...prevPhotos, result.assets[0]]);
-            fetchLocation();
-        } else {
-            Alert.alert('Error', 'No photo was captured.');
-        }
+      if (result.didCancel) {
+        Alert.alert('Cancelled', 'You cancelled the camera operation.');
+      } else if (result.errorCode) {
+        console.error('Camera Error:', result.errorMessage);
+        Alert.alert('Camera Error', `Code: ${result.errorCode}, Message: ${result.errorMessage}`);
+      } else if (result.assets && result.assets.length > 0) {
+        // Add the new photo to the existing array of photos
+        setPhoto((prevPhotos) => [...prevPhotos, result.assets[0]]);
+        fetchLocation();
+      } else {
+        Alert.alert('Error', 'No photo was captured.');
+      }
     } catch (error) {
-        console.error('Unexpected Camera Error:', error);
-        Alert.alert('Unexpected Error', 'Something went wrong while opening the camera.');
+      console.error('Unexpected Camera Error:', error);
+      Alert.alert('Unexpected Error', 'Something went wrong while opening the camera.');
     }
-};
+  };
 
-  // Fetch user's location
   const fetchLocation = async () => {
     const granted = await requestLocationPermission();
     if (!granted) {
@@ -144,25 +180,32 @@ const UserLoc = () => {
   };
 
   const handleSubmit = async () => {
-    if (!name || !client || !site || !activity || !assigned || !remarks || !photo || !location) {
+    if (!name || !client || !site || !activity || !assigned || !remarks || !location) {
       Alert.alert('Error', 'Please fill all fields and upload an image.');
       return;
     }
+    const postBody = {
+      name: name,
+      clientName: client,
+      siteId: site,
+      activity: activity,
+      assignedBy: assigned,
+      remarks: remarks,
+      latitude: location.latitude,
+      longitude: location.longitude,
+      imageUrl: [photo],
+      userId: userData?.userId,
+    };
 
+    console.log('Post Body:', postBody);
     try {
-      const newSite = { name, client, site, activity, assigned, remarks, photo, location, dateTime };
-      const storedSites = await AsyncStorage.getItem('sites');
-      let siteList = storedSites ? JSON.parse(storedSites) : [];
-      if (!Array.isArray(siteList)) {
-        siteList = [];
-      }
-      siteList.push(newSite);
-      await AsyncStorage.setItem('sites', JSON.stringify(siteList));
-      navigation.navigate('Dashboard', { userData: newSite });
+      const response = await postAssignment(postBody);
+      console.log('Response:', response);
+      Alert.alert('Success', 'Assignment submitted successfully!');
     } catch (error) {
-      console.error('Error saving site:', error);
-      Alert.alert('Error', 'Failed to save site.');
+      console.log('Error:', error);
     }
+    console.log({ name, client, site, activity, assigned, remarks, photo, location });
   };
 
 
@@ -190,7 +233,42 @@ const UserLoc = () => {
           <TextInput style={styles.input} placeholder="Enter Activity" value={activity} onChangeText={setActivity} />
 
           <Text style={styles.label}>Assigned By:</Text>
-          <TextInput style={styles.input} placeholder="Enter Assigned By" value={assigned} onChangeText={setAssigned} />
+          <SelectDropdown
+            data={assignors}
+            onSelect={(selectedItem, index) => {
+              setAssigned(selectedItem, index);
+            }}
+            renderButton={(selectedItem, isOpen) => (
+              <View style={styles.dropdownButtonStyle}>
+                <Text style={styles.dropdownButtonTxtStyle}>
+                  {selectedItem || 'Select Assigned By'}
+                </Text>
+              </View>
+            )}
+            renderItem={(item, index, isSelected) => (
+              <View
+                style={{
+                  ...styles.dropdownItemStyle,
+                  ...(isSelected && { backgroundColor: '#D2D9DF' }),
+                }}
+              >
+                <Text style={styles.dropdownItemTxtStyle}>{item}</Text>
+              </View>
+            )}
+            dropdownStyle={styles.dropdownMenuStyle}
+            search
+            searchInputStyle={styles.dropdownSearchInputStyle}
+            searchInputTxtColor={'#151E26'}
+            searchPlaceHolder={'Search here'}
+            searchPlaceHolderColor={'#72808D'}
+            renderSearchInputLeftIcon={() => (
+              <FontAwesome name={'search'} color={'#72808D'} size={18} />
+            )}
+            defaultButtonText="Select Assigned By"
+            buttonStyle={styles.dropdownButtonStyle}
+            buttonTextStyle={styles.dropdownButtonTxtStyle}
+          />
+          {/* <TextInput style={styles.input} placeholder="Enter Assigned By" value={assigned} onChangeText={setAssigned} /> */}
           <Text style={styles.label}>Remarks:</Text>
           <TextInput
             style={styles.commentBox}
@@ -265,6 +343,44 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   submitText: { color: 'white', fontSize: 18, fontWeight: 'bold' },
+  dropdownButtonStyle: {
+    width: '100%',
+    borderWidth: 1,
+    borderColor: '#000',
+    borderRadius: 5,
+    padding: 10,
+    marginVertical: 10,
+  },
+  dropdownButtonTxtStyle: {
+    fontSize: 16,
+    color: '#333',
+  },
+  dropdownMenuStyle: {
+    position: 'absolute',
+    width: '90%',
+    maxHeight: 150,
+    borderRadius: 5,
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 5,
+  },
+  dropdownItemStyle: {
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
+  },
+  dropdownItemTxtStyle: {
+    fontSize: 16,
+  },
+  dropdownSearchInputStyle: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
+    padding: 10,
+    fontSize: 16,
+  },
 });
 
 export default UserLoc;
