@@ -2,10 +2,10 @@
 /* eslint-disable no-catch-shadow */
 /* eslint-disable no-shadow */
 /* eslint-disable no-unused-vars */
-/* eslint-disable react-hooks/exhaustive-deps */
-import { useNavigation, useRoute } from '@react-navigation/native';
-import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, Modal, TouchableOpacity, StyleSheet, Alert, ScrollView, Image, Keyboard } from 'react-native';
+
+import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { View, Text, TextInput, Modal, TouchableOpacity, StyleSheet, Alert, ScrollView, Image, Keyboard, Platform, ActivityIndicator } from 'react-native';
 import RNHTMLtoPDF from 'react-native-html-to-pdf';
 import Share from 'react-native-share';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -13,6 +13,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import moment from 'moment';
 import { getAllAssignments } from '../services/Apiservices';
+import { Dialog } from '@rneui/themed';
 
 const Dashboard = () => {
   const route = useRoute();
@@ -24,8 +25,7 @@ const Dashboard = () => {
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [userData, setUserData] = useState('');
   const [assignments, setAssignments] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
@@ -52,33 +52,37 @@ const Dashboard = () => {
           setUserData(parsedData);
         }
       } catch (error) {
-        console.error('Error fetching user data from AsyncStorage:', error);
+        console.log('Error fetching user data from AsyncStorage:', error);
       }
     };
 
     getUserId();
   }, []);
-  useEffect(() => {
-    const fetchAssignments = async () => {
-      try {
-        if (userData?.userId) { // Ensure userId is available
-          const data = await getAllAssignments(userData.userId);
-          setAssignments(data);
-        }
-      } catch (err) {
-        setError(err);
-      } finally {
-        setLoading(false);
+
+  const fetchAssignments = async (userId) => {
+    try {
+      if (userId) {
+        const data = await getAllAssignments(userId);
+        setAssignments(data);
       }
-    };
+    } catch (err) {
+      console.log('error get all assignments', err);
+    }
+  };
 
-    fetchAssignments();
+  useEffect(() => {
+    if (userData?.userId) {
+      fetchAssignments(userData.userId);
+    }
   }, [userData]);
-  console.log('assignments', assignments);
 
-  const filteredSites = siteData?.filter(site => {
-    return site.dateTime.toLowerCase().includes(searchQuery.toLowerCase());
-  });
+  useFocusEffect(
+    useCallback(() => {
+      if (userData?.userId) {
+        fetchAssignments(userData?.userId);
+      }
+    }, [userData])
+  );
 
   const openModal = (site) => {
     console.log('site', site);
@@ -86,139 +90,61 @@ const Dashboard = () => {
     setModalVisible(true);
   };
 
-  const shareAllSitesAsPDF = async () => {
-    let htmlContent = `
-      <html>
-        <head>
-          <style>
-            body {
-              font-family: Arial, sans-serif;
-              padding: 20px;
-            }
-            h1 {
-              text-align: center;
-              margin-bottom: 20px;
-            }
-            .site-container {
-              border: 1px solid #ddd;
-              padding: 15px;
-              margin-bottom: 10px;
-              border-radius: 5px;
-            }
-            .site-container h2 {
-              margin: 0;
-              padding-bottom: 5px;
-              border-bottom: 1px solid #ccc;
-            }
-            .site-container p {
-              margin: 5px 0;
-            }
-            .photo {
-              text-align: center;
-              margin-top: 10px;
-            }
-            img {
-              width: 300px;
-              height: auto;
-              border-radius: 5px;
-            }
-          </style>
-        </head>
-        <body>
-          <h1>All Site Details</h1>
-    `;
-
-    siteData.forEach(site => {
-      htmlContent += `
-        <div class="site-container">
-          <h2>${site.name}</h2>
-          <p><strong>Activity:</strong> ${site.activity}</p>
-          <p><strong>Assigned To:</strong> ${site.assigned}</p>
-          <p><strong>Client:</strong> ${site.client}</p>
-          <p><strong>Date & Time:</strong> ${site.dateTime}</p>
-          <p><strong>Location:</strong> ${site.location.latitude}, ${site.location.longitude}</p>
-          <p><strong>Remarks:</strong> ${site.remarks}</p>
-          <p><strong>Site:</strong> ${site.site}</p>
-          ${site.photo?.uri ? `<div class="photo"><img src="${site.photo.uri}" /></div>` : ''}
-        </div>
-      `;
-    });
-
-    htmlContent += '</body></html>';
-
-    try {
-      const file = await RNHTMLtoPDF.convert({
-        html: htmlContent,
-        fileName: 'All_Sites',
-        base64: false,
-        width: 612,
-        height: 792,
-      });
-
-      await Share.open({
-        url: `file://${file.filePath}`,
-        type: 'application/pdf',
-        title: 'Share All Sites',
-      });
-    } catch (error) {
-      console.log('Error', 'Failed to generate PDF');
-    }
-  };
-
-
   const addSite = () => {
     navigation.navigate('AddSite');
   };
-
-  const shareSiteAsPDF = async () => {
+  const formatDateTime = (dateTimeString) => {
+    if (!dateTimeString) { return 'No Date'; }
+    const parsedDate = moment(dateTimeString, ['DD/MM/YYYY HH:mm:ss', 'YYYY-MM-DD HH:mm:ss', 'YYYY/MM/DD HH:mm:ss']);
+    if (!parsedDate.isValid()) {
+      return 'Invalid Date';
+    }
+    return parsedDate.format('D/M/YYYY hh:mm A');
+  };
+  const filteredSites = assignments?.filter(site => {
+    if (!site.createdAt) { return false; }
+    const formattedDate = formatDateTime(site.createdAt);
+    return formattedDate.toLowerCase().includes(searchQuery.toLowerCase());
+  });
+  const shareAllSitesAsPDF = async () => {
+    setLoading(true);
+    console.log('Generating PDF...');
     let htmlContent = `
       <html>
         <head>
           <style>
-            body {
-              font-family: Arial, sans-serif;
-              padding: 20px;
-            }
-            .site-container {
-              border: 1px solid #ddd;
-              padding: 15px;
-              margin-bottom: 10px;
-              border-radius: 5px;
-            }
-            .site-container h2 {
-              margin: 0;
-              padding-bottom: 5px;
-              border-bottom: 1px solid #ccc;
-            }
-            .site-container p {
-              margin: 5px 0;
-            }
-            .photo {
-              text-align: center;
-              margin-top: 10px;
-            }
-            img {
-              width: 300px;
-              height: auto;
-              border-radius: 5px;
-            }
+            body { font-family: Arial, sans-serif; padding: 20px; }
+            h1 { text-align: center; margin-bottom: 20px; }
+            .site-container { border: 1px solid #ddd; padding: 15px; margin-bottom: 10px; border-radius: 5px; }
+            .site-container h2 { margin: 0; padding-bottom: 5px; border-bottom: 1px solid #ccc; }
+            .site-container p { margin: 5px 0; }
+            .boldText { font-weight: bold; }
+            .photo { display: flex; flex-wrap: wrap; justify-content: center; margin-top: 10px; }
+            .photo img { width: 100px; height: 100px; margin: 5px; border-radius: 5px; }
           </style>
         </head>
         <body>
+          <h1>Work Report</h1>
     `;
-
-    siteData.forEach(site => {
+    assignments.forEach(site => {
       htmlContent += `
         <div class="site-container">
-          <h2>${site.name}</h2>
-          <p><strong>Activity:</strong> ${site.activity}</p>
-          <p><strong>Assigned To:</strong> ${site.assigned}</p>
-          <p><strong>Client:</strong> ${site.client}</p>
-          <p><strong>Date & Time:</strong> ${site.dateTime}</p>
-          <p><strong>Location:</strong> ${site.location.latitude}, ${site.location.longitude}</p>
-          <p><strong>Remarks:</strong> ${site.remarks}</p>
-          <p><strong>Site:</strong> ${site.site}</p>
-          ${site.photo?.uri ? `<div class="photo"><img src="${site.photo.uri}" /></div>` : ''}
+          <h2>${site.userId?.userName}</h2>
+          <p><strong>Activity:</strong> ${site?.activity}</p>
+          <p><strong>Assigned To:</strong> ${site.assignedBy?.assignor}</p>
+          <p><strong>Client:</strong> ${site?.clientName}</p>
+          <p><strong>Date & Time:</strong> ${formatDateTime(site?.createdAt)}</p>
+           <div class="line"><span class="boldText">Latitude:</span> ${site?.latitude}</div>
+          <div class="line"><span class="boldText">Longitude:</span> ${site?.longitude}</div>
+          <p><strong>Remarks:</strong> ${site?.remarks}</p>
+          <p><strong>Site:</strong> ${site?.siteId}</p>
+          <div class="line"><span class="boldText">Phone Number:</span> ${site.userId?.phoneNumber}</div>
+  
+          ${site?.galleryImages?.length > 0 ? `
+            <div class="photo">
+              ${site.galleryImages.map(img => `<img src="${img}" />`).join('')}
+            </div>
+          ` : ''}
         </div>
       `;
     });
@@ -228,19 +154,154 @@ const Dashboard = () => {
     try {
       const file = await RNHTMLtoPDF.convert({
         html: htmlContent,
-        fileName: 'All_Sites',
+        fileName: 'Work_Report',
+        directory: 'Documents',
         base64: false,
-        width: 612,
-        height: 792,
       });
 
+      console.log('PDF File Path:', file.filePath);
+      if (!file.filePath) {
+        console.error('Failed to generate PDF file');
+        return;
+      }
+
+      const filePath = Platform.OS === 'android' ? `file://${file.filePath}` : file.filePath;
+      setLoading(false);
       await Share.open({
-        url: `file://${file.filePath}`,
+        url: filePath,
         type: 'application/pdf',
-        title: 'Share All Sites',
+        title: 'Share Work Report',
       });
     } catch (error) {
-      console.log('Error', 'Failed to generate PDF');
+      setLoading(false);
+      console.log('Error sharing PDF:', error);
+    }
+  };
+  const shareSiteAsPDF = async (site) => {
+    setLoading(true);
+    if (!site) return;
+
+    let htmlContent = `
+      <html>
+      <head>
+        <style>
+          body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f9f9f9;
+            color: #333;
+          }
+          h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 24px;
+            color: #2c3e50;
+            font-weight: bold;
+          }
+          .container {
+            background-color: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+          }
+          .line {
+            margin-bottom: 15px;
+            font-size: 14px;
+            line-height: 1.6;
+          }
+          .boldText {
+            font-weight: bold;
+            color: #2c3e50;
+            display: inline-block;
+            min-width: 120px;
+          }
+          .photo-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+          }
+          .photo-container img {
+            width: 100px;
+            height: 100px;
+            border-radius: 8px;
+            object-fit: cover;
+            border: 1px solid #e0e0e0;
+          }
+          .header {
+            text-align: center;
+            margin-bottom: 20px;
+          }
+          .header img {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 10px;
+          }
+          .header h2 {
+            font-size: 20px;
+            color: #2c3e50;
+            margin: 0;
+          }
+          .footer {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 12px;
+            color: #777;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h2>Site Report</h2>
+        </div>
+        <div class="container">
+          <div class="line"><span class="boldText">User Name:</span> ${site.userId?.userName}</div>
+          <div class="line"><span class="boldText">Site:</span> ${site?.siteId}</div>
+          <div class="line"><span class="boldText">Activity:</span> ${site?.activity}</div>
+          <div class="line"><span class="boldText">Client:</span> ${site?.clientName}</div>
+          <div class="line"><span class="boldText">Assigned By:</span> ${site.assignedBy?.assignor}</div>
+          <div class="line"><span class="boldText">Remarks:</span> ${site?.remarks}</div>
+          <div class="line"><span class="boldText">Date & Time:</span> ${formatDateTime(site?.createdAt)}</div>
+          <div class="line"><span class="boldText">Latitude:</span> ${site?.latitude}</div>
+          <div class="line"><span class="boldText">Longitude:</span> ${site?.longitude}</div>
+          <div class="line"><span class="boldText">Phone Number:</span> ${site.userId?.phoneNumber}</div>
+          ${site?.galleryImages?.length > 0 ? `
+            <div class="photo-container">
+              ${site.galleryImages.map(img => `<img src="${img}" />`).join('')}
+            </div>
+          ` : ''}
+        </div>
+      </body>
+      </html>
+    `;
+
+    try {
+      const file = await RNHTMLtoPDF.convert({
+        html: htmlContent,
+        fileName: `Site_Report_${site.siteId}`,
+        directory: 'Documents',
+        base64: false,
+      });
+
+      console.log('PDF File Path:', file.filePath);
+      if (!file.filePath) {
+        console.error('Failed to generate PDF file');
+        return;
+      }
+
+      const filePath = Platform.OS === 'android' ? `file://${file.filePath}` : file.filePath;
+      setLoading(false);
+      await Share.open({
+        url: filePath,
+        type: 'application/pdf',
+        title: 'Share Site Report',
+      });
+    } catch (error) {
+      setLoading(false);
+      console.log('Error sharing PDF:', error);
     }
   };
 
@@ -263,15 +324,15 @@ const Dashboard = () => {
           />
         </View>
         <ScrollView style={styles.scrollView}>
-          {assignments?.length === 0 ? (
+          {filteredSites?.length === 0 ? (
             <Text style={styles.noDataText}>No sites available</Text>
           ) : (
-            assignments?.map((site, index) => (
+            filteredSites?.map((site, index) => (
               <View key={index} style={styles.siteItem}>
                 <TouchableOpacity onPress={() => openModal(site)}>
                   <Text style={styles.siteName}>{site.name}</Text>
                 </TouchableOpacity>
-                {/* <Text style={styles.siteDate}>{formatDateTime(site.dateTime)}</Text> */}
+                <Text style={styles.siteDate}>{formatDateTime(site.createdAt)}</Text>
               </View>
             ))
           )}
@@ -367,6 +428,13 @@ const Dashboard = () => {
             </ScrollView>
           </View>
         </View>
+        <Dialog isVisible={loading}>
+        <ActivityIndicator
+          size="large"
+          color="red"
+        />
+        <Text style={{ color: '#000', textAlign: 'center' }}>PDF Generating...</Text>
+      </Dialog>
       </Modal>
 
     </>
@@ -379,13 +447,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginVertical: 8,
   },
+  loaderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 15,
     paddingHorizontal: 10,
-    backgroundColor: '#ccc'
+    backgroundColor: '#ccc',
   },
 
   headerTitle: {

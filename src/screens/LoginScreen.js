@@ -50,7 +50,7 @@ const LoginScreen = () => {
       return;
     }
     const body = {
-      phoneNumber: mobile,
+      phoneNumber: formattedPhoneNumber,
       deviceId: deviceId,
     };
     try {
@@ -59,7 +59,7 @@ const LoginScreen = () => {
       console.log('response45', response);
       console.log('otpcode', otpcode);
       Alert.alert('Success', 'OTP request sent successfully!');
-      navigation.navigate('Otp', { mobile, otpcode });
+      navigation.navigate('Otp', { formattedPhoneNumber, otpcode });
     } catch (error) {
       console.log('Error', error);
       Alert.alert(error);

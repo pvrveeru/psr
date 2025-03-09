@@ -65,7 +65,7 @@ export const getAllAssignors = async () => {
         const response = await api.get(avdurl1 + 'assignor');
         return response.data?.data?.Assignors;
     } catch (error) {
-        console.error('getAllAssignors error:', error.response?.data || error);
+        console.log('getAllAssignors error:', error.response?.data || error);
         throw error.response?.data?.error || 'Error fetching assignors';
     }
 };
@@ -75,7 +75,7 @@ export const getAllAssignments = async (userId) => {
         const response = await api.get(avdurl1 + 'assignments', { params: { userId } });
         return response.data?.data?.result;
     } catch (error) {
-        console.error('getAllAssignors error:', error.response?.data || error);
+        console.log('getall assignments error:', error.response?.data || error);
         throw error.response?.data?.error || 'Error fetching assignors';
     }
 };
@@ -89,3 +89,19 @@ export const postAssignment = async (body) => {
         throw error.response?.data || 'An error occurred';
     }
 };
+
+export const uploadAssignmentImages = async (formData, assignmentId) => {
+    // const url = avdurl1 + `/uploads/assignment/${assignmentId}`;
+    // console.log(url);
+    try {
+      const response = await api.post(avdurl1 + `uploads/assignment/${assignmentId}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.log('Upload error:', error.response?.data || error.message);
+      throw new Error('Failed to upload images');
+    }
+  };

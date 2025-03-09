@@ -6,7 +6,7 @@ import { validateOtp } from '../services/Apiservices';
 
 const OtpScreen = ({ route }) => {
     const navigation = useNavigation();
-  const { mobile, otpcode } = route.params;
+  const { formattedPhoneNumber, otpcode } = route.params;
   const [otp, setOtp] = useState(otpcode ? otpcode : '');
 
   const verifyOtp = async () => {
@@ -20,7 +20,7 @@ const OtpScreen = ({ route }) => {
   const handleVerifyOtp = async () => {
     if (otp.length === 6) {
       const body = {
-        phoneNumber: mobile,
+        phoneNumber: formattedPhoneNumber,
         otpCode: otp,
       };
       try {
@@ -59,7 +59,7 @@ const OtpScreen = ({ route }) => {
   return (
     <View style={styles.container}>
       <Image source={require('../assets/images/slogo.png')} style={styles.logo} />
-      <Text style={styles.label}>Enter OTP sent to {mobile}</Text>
+      <Text style={styles.label}>Enter OTP sent to {formattedPhoneNumber}</Text>
       <TextInput
         style={styles.input}
         keyboardType="numeric"

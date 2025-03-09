@@ -12,21 +12,19 @@ import {
   PermissionsAndroid,
   Platform,
   TouchableOpacity,
+  Keyboard,
 } from 'react-native';
 import * as ImagePicker from 'react-native-image-picker';
 import Geolocation from 'react-native-geolocation-service';
-import { Picker } from '@react-native-picker/picker';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { getAllAssignors, postAssignment } from '../services/Apiservices';
+import { getAllAssignors, postAssignment, uploadAssignmentImages } from '../services/Apiservices';
 import SelectDropdown from 'react-native-select-dropdown';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 
 const UserLoc = () => {
   const navigation = useNavigation();
-  const route = useRoute();
-  const { setSiteData } = route.params || {};
   const [name, setName] = useState('');
   const [client, setClient] = useState('');
   const [site, setSite] = useState('');
@@ -35,39 +33,37 @@ const UserLoc = () => {
   const [remarks, setRemarks] = useState('');
   const [photo, setPhoto] = useState([]);
   const [location, setLocation] = useState(null);
-  const [dateTime, setDateTime] = useState('');
   const [assignors, setAssignors] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-    const [userData, setUserData] = useState('');
+  const [userData, setUserData] = useState('');
+  const [allAssignors, setAllAssignors] = useState([]);
+  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
 
-    useEffect(() => {
-      const getUserId = async () => {
-        try {
-          const response = await AsyncStorage.getItem('userData');
-          if (response) {
-            const parsedData = JSON.parse(response);
-            setUserData(parsedData);
-          }
-        // eslint-disable-next-line no-catch-shadow
-        } catch (error) {
-          console.error('Error fetching user data from AsyncStorage:', error);
+  useEffect(() => {
+    const getUserId = async () => {
+      try {
+        const response = await AsyncStorage.getItem('userData');
+        if (response) {
+          const parsedData = JSON.parse(response);
+          setUserData(parsedData);
+          setName(parsedData.userName);
         }
-      };
 
-      getUserId();
-    }, []);
+      } catch (error) {
+        console.error('Error fetching user data from AsyncStorage:', error);
+      }
+    };
 
+    getUserId();
+  }, []);
+  // console.log('name', allAssignors);
   useEffect(() => {
     const fetchAssignors = async () => {
       try {
         const data = await getAllAssignors();
         setAssignors(data.map(item => item.assignor));
-        // setAssignors(data);
+        setAllAssignors(data);
       } catch (err) {
-        setError(err);
-      } finally {
-        setLoading(false);
+        console.log('fetch Assignors error', err);
       }
     };
 
@@ -169,7 +165,7 @@ const UserLoc = () => {
               .getSeconds()
               .toString()
               .padStart(2, '0')}`;
-        setDateTime(formattedDateTime);
+        console.log(formattedDateTime);
       },
       (error) => {
         Alert.alert('Location Error', JSON.stringify(error));
@@ -177,6 +173,12 @@ const UserLoc = () => {
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
     );
   };
+
+  const selectedAssignor = allAssignors?.find(
+    (assignor) => assignor.assignor === assigned
+  );
+
+  const selectedAssignorId = selectedAssignor ? selectedAssignor?.assignorId : null;
 
   const handleSubmit = async () => {
     if (!name || !client || !site || !activity || !assigned || !remarks || !location) {
@@ -188,25 +190,68 @@ const UserLoc = () => {
       clientName: client,
       siteId: site,
       activity: activity,
-      assignedBy: assigned,
+      assignedBy: selectedAssignorId,
       remarks: remarks,
-      latitude: location.latitude,
-      longitude: location.longitude,
-      imageUrl: [photo],
+      latitude: location.latitude.toString(),
+      longitude: location.longitude.toString(),
+      imageUrl: '',
       userId: userData?.userId,
     };
 
-    console.log('Post Body:', postBody);
+    // console.log('Post Body:', postBody);
     try {
       const response = await postAssignment(postBody);
-      console.log('Response:', response);
-      Alert.alert('Success', 'Assignment submitted successfully!');
+      // console.log('response', response);
+      if (response && response.assignmentId) {
+        await uploadImages(response.assignmentId);
+        navigation.goBack();
+      } else {
+        Alert.alert('Error', 'Failed to submit assignment.');
+      }
     } catch (error) {
       console.log('Error:', error);
     }
-    console.log({ name, client, site, activity, assigned, remarks, photo, location });
   };
 
+  const uploadImages = async (assignmentId) => {
+    try {
+      const formData = new FormData();
+      photo.forEach((image, index) => {
+        formData.append('images', {
+          uri: image.uri,
+          name: `image_${index}.jpg`,
+          type: 'image/jpeg',
+        });
+      });
+      // console.log('formData', formData);
+      try {
+        const response = await uploadAssignmentImages(formData, assignmentId);
+        // Alert.alert('Upload Success', response.message);
+        console.log('Uploaded URLs:', response.urls);
+      } catch (error) {
+        Alert.alert('Upload Failed', error.message);
+      }
+    } catch (error) {
+      console.error('Image upload error:', error);
+      Alert.alert('Error', 'Image upload failed.');
+    }
+  };
+
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      'keyboardDidShow',
+      () => setKeyboardVisible(true)
+    );
+    const keyboardDidHideListener = Keyboard.addListener(
+      'keyboardDidHide',
+      () => setKeyboardVisible(false)
+    );
+
+    return () => {
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
+    };
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -219,8 +264,8 @@ const UserLoc = () => {
       <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <View>
 
-          <Text style={styles.label}>Name:</Text>
-          <TextInput style={styles.input} placeholder="Enter your Name" value={name} onChangeText={setName} />
+          {/* <Text style={styles.label}>Name:</Text>
+          <TextInput style={styles.input} placeholder="Enter your Name" value={name} onChangeText={setName} /> */}
 
           <Text style={styles.label}>Client:</Text>
           <TextInput style={styles.input} placeholder="Enter Client Name" value={client} onChangeText={setClient} />
@@ -279,23 +324,19 @@ const UserLoc = () => {
           />
           <Button title="Capture Photo" onPress={captureImage} />
           <View style={styles.imageContainer}>
-            {photo.map((photo, index) => (
-              <Image key={index} source={{ uri: photo.uri }} style={styles.image} />
+            {photo.map((image, index) => (
+              <Image key={index} source={{ uri: image.uri }} style={styles.image} />
             ))}
           </View>
-          {/* {location && location.latitude && location.longitude && (
-            <><Text style={styles.details}>Position</Text>
-              <Text style={styles.info}>Latitude: {location.latitude}, Longitude: {location.longitude}</Text>
-            </>
-          )}
-          {dateTime && <Text style={styles.info}>Date/Time: {dateTime}</Text>} */}
         </View>
       </ScrollView>
-      <View style={styles.button}>
-        <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-          <Text style={styles.submitText}>Submit</Text>
-        </TouchableOpacity>
-      </View>
+      {!isKeyboardVisible && (
+        <View style={styles.button}>
+          <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
+            <Text style={styles.submitText}>Submit</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </SafeAreaView>
   );
 };
