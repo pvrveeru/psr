@@ -93,19 +93,75 @@ const Dashboard = () => {
   const addSite = () => {
     navigation.navigate('AddSite');
   };
+
   const formatDateTime = (dateTimeString) => {
-    if (!dateTimeString) { return 'No Date'; }
-    const parsedDate = moment(dateTimeString, ['DD/MM/YYYY HH:mm:ss', 'YYYY-MM-DD HH:mm:ss', 'YYYY/MM/DD HH:mm:ss']);
+    if (!dateTimeString) { 
+      return 'No Date'; 
+    }
+  
+    // Ensure Moment is using the correct format for the provided dateTimeString
+    const parsedDate = moment.utc(dateTimeString, ['DD/MM/YYYY HH:mm:ss', 'YYYY-MM-DD HH:mm:ss', 'YYYY/MM/DD HH:mm:ss']);
+    
+    // If parsed date is invalid, return 'Invalid Date'
     if (!parsedDate.isValid()) {
       return 'Invalid Date';
     }
-    return parsedDate.format('D/M/YYYY hh:mm A');
+  
+    // Convert the date to local time zone
+    const localDate = parsedDate.local();
+    return localDate.format('D/M/YYYY hh:mm A');  // Format date
   };
+  
+  
+  
+
   const filteredSites = assignments?.filter(site => {
-    if (!site.createdAt) { return false; }
-    const formattedDate = formatDateTime(site.createdAt);
-    return formattedDate.toLowerCase().includes(searchQuery.toLowerCase());
-  });
+  if (!site.createdAt) { return false; }
+  
+  const formattedDate = formatDateTime(site.createdAt);
+  return formattedDate.toLowerCase().includes(searchQuery.toLowerCase());
+});
+
+
+  const handleLogout = async () => {
+    Alert.alert(
+      'Log Out',
+      'Are you sure you want to log out?',
+      [
+        {
+          text: 'Cancel',
+          onPress: () => console.log('Cancel Pressed'),
+          style: 'cancel',
+        },
+        {
+          text: 'OK',
+          onPress: async () => {
+            try {
+              // Clear AsyncStorage
+              await AsyncStorage.setItem('isLoggedIn', 'false');
+              await AsyncStorage.removeItem('jwtToken');
+              await AsyncStorage.removeItem('userData');
+              
+              // Optionally, dispatch actions to clear global state (e.g., Redux)
+              // dispatch(getUserData([]));  // Uncomment if using Redux or another state management
+  
+              // Show success alert
+              Alert.alert('Logged out', 'You have been logged out successfully.');
+              
+              // Navigate to the Login screen
+              navigation.navigate('Login');
+            } catch (error) {
+              console.error('Logout failed:', error);
+              Alert.alert('Error', 'An error occurred while logging out.');
+            }
+          },
+        },
+      ],
+      { cancelable: false }
+    );
+  };
+  
+
   const shareAllSitesAsPDF = async () => {
     setLoading(true);
     console.log('Generating PDF...');
@@ -308,6 +364,9 @@ const Dashboard = () => {
   return (
     <>
       <View style={styles.header}>
+      <TouchableOpacity onPress={handleLogout} style={{ marginLeft: 'auto' }}>
+          <Icon name="log-out-outline" size={28} />
+        </TouchableOpacity>
         <Text style={styles.headerTitle}>Work Report</Text>
         <TouchableOpacity onPress={shareAllSitesAsPDF} style={{ marginLeft: 'auto' }}>
           <Icon name="share-social-outline" size={28} />
@@ -330,7 +389,7 @@ const Dashboard = () => {
             filteredSites?.map((site, index) => (
               <View key={index} style={styles.siteItem}>
                 <TouchableOpacity onPress={() => openModal(site)}>
-                  <Text style={styles.siteName}>{site.name}</Text>
+                  <Text style={styles.siteName}>{site.clientName}</Text>
                 </TouchableOpacity>
                 <Text style={styles.siteDate}>{formatDateTime(site.createdAt)}</Text>
               </View>
