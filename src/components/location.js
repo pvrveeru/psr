@@ -13,6 +13,7 @@ import {
   Platform,
   TouchableOpacity,
   Keyboard,
+  ActivityIndicator,
 } from 'react-native';
 import * as ImagePicker from 'react-native-image-picker';
 import Geolocation from 'react-native-geolocation-service';
@@ -22,6 +23,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { getAllAssignors, postAssignment, uploadAssignmentImages } from '../services/Apiservices';
 import SelectDropdown from 'react-native-select-dropdown';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
+import { Dialog } from '@rneui/themed';
 
 const UserLoc = () => {
   const navigation = useNavigation();
@@ -37,6 +39,7 @@ const UserLoc = () => {
   const [userData, setUserData] = useState('');
   const [allAssignors, setAllAssignors] = useState([]);
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const getUserId = async () => {
@@ -122,6 +125,9 @@ const UserLoc = () => {
         mediaType: 'photo',
         cameraType: 'front',
         saveToPhotos: true,
+        maxWidth: 800,
+        maxHeight: 800,
+        quality: 0.6,
       });
 
       if (result.didCancel) {
@@ -131,6 +137,7 @@ const UserLoc = () => {
         Alert.alert('Camera Error', `Code: ${result.errorCode}, Message: ${result.errorMessage}`);
       } else if (result.assets && result.assets.length > 0) {
         // Add the new photo to the existing array of photos
+        console.log('upload result', result.assets[0]);
         setPhoto((prevPhotos) => [...prevPhotos, result.assets[0]]);
         fetchLocation();
       } else {
@@ -181,6 +188,7 @@ const UserLoc = () => {
   const selectedAssignorId = selectedAssignor ? selectedAssignor?.assignorId : null;
 
   const handleSubmit = async () => {
+    setLoading(true);
     if (!name || !client || !site || !activity || !assigned || !remarks || !location) {
       Alert.alert('Error', 'Please fill all fields and upload an image.');
       return;
@@ -205,38 +213,67 @@ const UserLoc = () => {
       if (response && response.assignmentId) {
         await uploadImages(response.assignmentId);
         navigation.goBack();
+        setLoading(false);
       } else {
+        setLoading(false);
         Alert.alert('Error', 'Failed to submit assignment.');
       }
     } catch (error) {
+      setLoading(false);
       console.log('Error:', error);
     }
   };
 
+  // const uploadImages = async (assignmentId) => {
+  //   try {
+  //     const formData = new FormData();
+  //     photo.forEach((image, index) => {
+  //       formData.append('images', {
+  //         uri: image.uri,
+  //         name: `image_${index}.jpg`,
+  //         type: 'image/jpeg',
+  //       });
+  //     });
+  //     // console.log('formData', formData);
+  //     try {
+  //       const response = await uploadAssignmentImages(formData, assignmentId);
+  //       // Alert.alert('Upload Success', response.message);
+  //       console.log('Uploaded URLs:', response.urls);
+  //     } catch (error) {
+  //       Alert.alert('Upload Failed', error.message);
+  //     }
+  //   } catch (error) {
+  //     console.error('Image upload error:', error);
+  //     Alert.alert('Error', 'Image upload failed.');
+  //   }
+  // };
+
   const uploadImages = async (assignmentId) => {
     try {
-      const formData = new FormData();
-      photo.forEach((image, index) => {
+      for (let index = 0; index < photo.length; index++) {
+        const image = photo[index];
+        const formData = new FormData();
         formData.append('images', {
           uri: image.uri,
           name: `image_${index}.jpg`,
           type: 'image/jpeg',
         });
-      });
-      // console.log('formData', formData);
-      try {
-        const response = await uploadAssignmentImages(formData, assignmentId);
-        // Alert.alert('Upload Success', response.message);
-        console.log('Uploaded URLs:', response.urls);
-      } catch (error) {
-        Alert.alert('Upload Failed', error.message);
+
+        console.log(`Uploading Image ${index + 1}...`);
+
+        try {
+          const response = await uploadAssignmentImages(formData, assignmentId);
+          console.log(`Image ${index + 1} Uploaded:`, response.urls);
+        } catch (error) {
+          console.log(`Upload Failed for Image ${index + 1}:`, error.message);
+        }
       }
+      console.log('All images uploaded successfully.');
     } catch (error) {
-      console.error('Image upload error:', error);
+      console.log('Image upload error:', error);
       Alert.alert('Error', 'Image upload failed.');
     }
   };
-
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
       'keyboardDidShow',
@@ -337,6 +374,13 @@ const UserLoc = () => {
           </TouchableOpacity>
         </View>
       )}
+      <Dialog isVisible={loading}>
+        <ActivityIndicator
+          size="large"
+          color="red"
+        />
+        <Text style={{ color: '#000', textAlign: 'center' }}>Assignment Subbmitting...</Text>
+      </Dialog>
     </SafeAreaView>
   );
 };

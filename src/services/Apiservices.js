@@ -101,7 +101,7 @@ export const uploadAssignmentImages = async (formData, assignmentId) => {
       });
       return response.data;
     } catch (error) {
-      console.log('Upload error:', error.response?.data || error.message);
-      throw new Error('Failed to upload images');
+      console.log('Upload error:', error);
+      throw error.response?.data;
     }
   };

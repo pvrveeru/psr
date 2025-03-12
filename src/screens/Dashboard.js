@@ -1,6 +1,6 @@
 /* eslint-disable react-native/no-inline-styles */
-/* eslint-disable no-catch-shadow */
-/* eslint-disable no-shadow */
+
+
 /* eslint-disable no-unused-vars */
 
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
@@ -95,29 +95,29 @@ const Dashboard = () => {
   };
 
   const formatDateTime = (dateTimeString) => {
-    if (!dateTimeString) { 
-      return 'No Date'; 
+    if (!dateTimeString) {
+      return 'No Date';
     }
-  
+
     // Ensure Moment is using the correct format for the provided dateTimeString
     const parsedDate = moment.utc(dateTimeString, ['DD/MM/YYYY HH:mm:ss', 'YYYY-MM-DD HH:mm:ss', 'YYYY/MM/DD HH:mm:ss']);
-    
+
     // If parsed date is invalid, return 'Invalid Date'
     if (!parsedDate.isValid()) {
       return 'Invalid Date';
     }
-  
+
     // Convert the date to local time zone
     const localDate = parsedDate.local();
     return localDate.format('D/M/YYYY hh:mm A');  // Format date
   };
-  
-  
-  
+
+
+
 
   const filteredSites = assignments?.filter(site => {
   if (!site.createdAt) { return false; }
-  
+
   const formattedDate = formatDateTime(site.createdAt);
   return formattedDate.toLowerCase().includes(searchQuery.toLowerCase());
 });
@@ -141,13 +141,13 @@ const Dashboard = () => {
               await AsyncStorage.setItem('isLoggedIn', 'false');
               await AsyncStorage.removeItem('jwtToken');
               await AsyncStorage.removeItem('userData');
-              
+
               // Optionally, dispatch actions to clear global state (e.g., Redux)
               // dispatch(getUserData([]));  // Uncomment if using Redux or another state management
-  
+
               // Show success alert
               Alert.alert('Logged out', 'You have been logged out successfully.');
-              
+
               // Navigate to the Login screen
               navigation.navigate('Login');
             } catch (error) {
@@ -160,7 +160,7 @@ const Dashboard = () => {
       { cancelable: false }
     );
   };
-  
+
 
   const shareAllSitesAsPDF = async () => {
     setLoading(true);
@@ -235,7 +235,7 @@ const Dashboard = () => {
   };
   const shareSiteAsPDF = async (site) => {
     setLoading(true);
-    if (!site) return;
+    if (!site) {return;}
 
     let htmlContent = `
       <html>
@@ -552,7 +552,8 @@ const styles = StyleSheet.create({
     width: '100%',
     backgroundColor: 'white',
     padding: 20,
-    borderRadius: 10,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
     height: '80%',
   },
   modalHeader: {
